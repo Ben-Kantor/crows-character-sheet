@@ -1,0 +1,1598 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Crows Character Sheet</title>
+
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Inter:wght@400;700&display=swap"
+            rel="stylesheet"
+        />
+
+        <style>
+            :root {
+                --bg-color: #111111;
+                --cell-bg: #1f1f1f;
+                --border-gray: #444;
+                --crows-red: #8b0000;
+                --text-main: #eaeaea;
+            }
+
+            body {
+                background-color: var(--bg-color);
+                color: var(--text-main);
+                font-family: "Inter", sans-serif;
+                margin: 0;
+                padding: 20px;
+                user-select: none;
+            }
+
+            input,
+            textarea {
+                user-select: auto;
+            }
+
+            h1,
+            h2,
+            .fell-font,
+            .btn-toggle-header {
+                font-family: "IM Fell English SC", serif;
+                margin: 0;
+                color: white;
+                letter-spacing: 1px;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+                color: var(--crows-red);
+            }
+
+            h2,
+            .btn-toggle-header {
+                font-size: 1.1rem;
+                border-bottom: 1px solid var(--border-gray);
+                margin-bottom: 8px;
+                padding-bottom: 2px;
+            }
+
+            .btn-toggle-header {
+                border: 1px solid var(--border-gray);
+                padding: 5px !important;
+                background: none;
+                border-radius: 5px;
+                color: white;
+                cursor: pointer;
+                padding: 0 0 2px 0;
+                text-align: left;
+                width: auto;
+                letter-spacing: 1px;
+            }
+
+            .btn-toggle-header.is-empty {
+                border: 1px solid var(--border-gray);
+            }
+
+            .btn-toggle-header.has-content {
+                border: 1px solid var(--text-main);
+            }
+
+            input[type="text"],
+            input[type="number"],
+            select,
+            textarea {
+                border-radius: 4px;
+                background-color: #2a2a2a;
+                padding: 0.4rem;
+                border: 1px solid #444;
+                color: white;
+                width: 100%;
+                box-sizing: border-box;
+                font-family: "Inter", sans-serif;
+            }
+
+            textarea {
+                resize: vertical;
+            }
+
+            input:focus,
+            select:focus,
+            textarea:focus {
+                outline: none;
+                border-color: var(--crows-red);
+            }
+
+            .app-container {
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+            }
+
+            #sheet {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+                gap: 15px;
+                max-width: 1200px;
+                width: 100%;
+            }
+
+            .column {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .cell {
+                background-color: var(--cell-bg);
+                padding: 15px;
+                border-radius: 6px;
+                border: 1px solid var(--border-gray);
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            }
+
+            .btn-circle {
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                background: #333;
+                color: white;
+                border: 1px solid #555;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                cursor: pointer;
+                font-weight: bold;
+                font-size: 14px;
+                line-height: 1;
+                padding: 0;
+            }
+            .btn-circle:hover {
+                background: var(--crows-red);
+                border-color: #ff5555;
+            }
+            .btn-circle:active {
+                background: #5a0000;
+            }
+
+            .num-ctrl-horiz {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .num-ctrl-horiz .val {
+                min-width: 20px;
+                text-align: center;
+                font-weight: bold;
+                font-size: 1.1rem;
+            }
+
+            .num-ctrl-vert {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+            }
+            .num-ctrl-vert .val {
+                font-family: "IM Fell English SC", serif;
+                font-size: 1.8rem;
+                line-height: 1;
+                min-width: 30px;
+                text-align: center;
+            }
+
+            .stat-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+
+            .char-box {
+                text-align: center;
+                background: #000;
+                padding: 10px 5px;
+                border-radius: 6px;
+                border: 1px solid var(--border-gray);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .char-box h2 {
+                border: none;
+                font-size: 1.1rem;
+                color: var(--crows-red);
+                margin-bottom: 5px;
+            }
+
+            .vital-box {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                background: #000;
+                padding: 10px;
+                border-radius: 6px;
+                border: 1px solid var(--border-gray);
+            }
+
+            .skill-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 0.85rem;
+                padding: 4px 0;
+                border-bottom: 1px solid #333;
+            }
+            .skill-group-title {
+                margin-top: 15px;
+                font-size: 1.4rem;
+                color: var(--crows-red);
+                font-family: "IM Fell English SC", serif;
+            }
+
+            .slot-row {
+                display: flex;
+                gap: 5px;
+                align-items: center;
+                margin-bottom: 5px;
+            }
+
+            .slot-label {
+                width: 70px;
+                font-size: 0.8rem;
+                color: #aaa;
+                text-transform: uppercase;
+            }
+
+            input[type="checkbox"].wound-cb {
+                cursor: pointer;
+                width: 18px;
+                height: 18px;
+                accent-color: var(--crows-red);
+                opacity: 50%;
+            }
+            input[type="checkbox"]:checked {
+                opacity: 100%;
+            }
+
+            .wound-slot {
+                background-color: #3a1515 !important;
+                border: 1px solid #ff3333 !important;
+            }
+            input:disabled.wound-slot {
+                opacity: 0.8;
+                color: #ffb3b3;
+                cursor: not-allowed;
+            }
+
+            .custom-dropdown {
+                position: relative;
+                display: flex;
+                width: 100%;
+            }
+            .custom-dropdown input {
+                border-top-right-radius: 0;
+                border-bottom-right-radius: 0;
+            }
+            .custom-dropdown button {
+                background: #2a2a2a;
+                border: 1px solid #444;
+                border-left: none;
+                color: #888;
+                border-top-right-radius: 4px;
+                border-bottom-right-radius: 4px;
+                cursor: pointer;
+                padding: 0 10px;
+            }
+            .custom-dropdown button:hover {
+                background: #333;
+                color: white;
+            }
+
+            .dropdown-menu {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: #000000;
+                border: 1px solid #444;
+                border-radius: 4px;
+                z-index: 100;
+                max-height: 200px;
+                overflow-y: auto;
+                margin: 0;
+                padding: 0;
+                list-style: none;
+            }
+            .dropdown-menu.open {
+                display: block;
+            }
+            .dropdown-menu li {
+                padding: 8px 10px;
+                cursor: pointer;
+                border-bottom: 1px solid #333;
+            }
+            .dropdown-menu li:hover {
+                background: #333;
+            }
+            .dropdown-menu .new-char-opt {
+                color: var(--crows-red);
+                font-weight: bold;
+                font-style: italic;
+                border-bottom: 2px solid #444;
+            }
+            .dropdown-menu .new-char-opt:hover {
+                background: var(--crows-red);
+                color: white;
+            }
+
+            .flex-row {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+            .justify-between {
+                justify-content: space-between;
+            }
+            .w-full {
+                width: 100%;
+            }
+            .mt-2 {
+                margin-top: 10px;
+            }
+            .text-grey {
+                color: #888;
+            }
+
+            .btn-action {
+                background: #222;
+                color: white;
+                padding: 5px 8px;
+                border-radius: 4px;
+                cursor: pointer;
+                border: 1px solid var(--border-gray);
+                font-family: "Inter", sans-serif;
+                font-size: 0.85rem;
+            }
+            .btn-action:hover {
+                background: var(--crows-red);
+            }
+
+            .header-controls {
+                display: flex;
+                gap: 5px;
+                flex-wrap: nowrap;
+                justify-content: flex-end;
+            }
+
+            .input-center {
+                text-align: center;
+            }
+
+            .modal-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.75);
+                z-index: 1000;
+                justify-content: center;
+                align-items: center;
+            }
+            .modal-overlay.open {
+                display: flex;
+            }
+            .modal-content {
+                background: #1f1f1f;
+                border: 1px solid var(--border-gray);
+                padding: 20px;
+                border-radius: 6px;
+                width: 90%;
+                max-width: 600px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            }
+            .modal-content textarea {
+                font-family: monospace;
+                background: #111;
+                color: #00ff00;
+                font-size: 0.9rem;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="app-container">
+            <main id="sheet">
+                <div class="column">
+                    <div class="cell">
+                        <div
+                            class="flex-row justify-between"
+                            style="align-items: flex-start"
+                        >
+                            <h1>CROWS</h1>
+                            <div class="header-controls">
+                                <button
+                                    class="btn-action"
+                                    onclick="openJsonModal()"
+                                >
+                                    JSON
+                                </button>
+                                <button
+                                    class="btn-action"
+                                    onclick="deleteCharacter()"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <label style="font-size: 0.8rem; color: #aaa"
+                                >Name</label
+                            >
+                            <div class="custom-dropdown">
+                                <input
+                                    type="text"
+                                    id="charName"
+                                    oninput="updateName(this.value)"
+                                    autocomplete="off"
+                                />
+                                <button onclick="toggleDropdown()">▼</button>
+                                <ul id="rosterList" class="dropdown-menu"></ul>
+                            </div>
+                        </div>
+                        <div class="stat-grid mt-2">
+                            <div>
+                                <label style="font-size: 0.8rem; color: #aaa"
+                                    >Background</label
+                                >
+                                <select
+                                    id="bgSelect"
+                                    onchange="sync('background', this.value)"
+                                >
+                                    <option value="">Choose...</option>
+                                    <option>Acolyte of the Gardner</option>
+                                    <option>Acolyte of the Healer</option>
+                                    <option>Acolyte of the Smith</option>
+                                    <option>Acolyte of the Three</option>
+                                    <option>Acolyte of the Warrior</option>
+                                    <option>Alchemist</option>
+                                    <option>Apprentice Mage</option>
+                                    <option>Archer</option>
+                                    <option>Assassin</option>
+                                    <option>Beggar</option>
+                                    <option>Blacksmith</option>
+                                    <option>Bodyguard</option>
+                                    <option>Cartographer</option>
+                                    <option>Conjurer</option>
+                                    <option>Cook</option>
+                                    <option>Duelist</option>
+                                    <option>Entertainer</option>
+                                    <option>Executioner</option>
+                                    <option>Farmer</option>
+                                    <option>Gladiator</option>
+                                    <option>Hunter</option>
+                                    <option>Hydromancer</option>
+                                    <option>Illusionist</option>
+                                    <option>Keraunomancer</option>
+                                    <option>Knight</option>
+                                    <option>Merchant</option>
+                                    <option>Miner</option>
+                                    <option>Noble</option>
+                                    <option>Pugilist</option>
+                                    <option>Pyromancer</option>
+                                    <option>Sage</option>
+                                    <option>Soldier</option>
+                                    <option>Thief</option>
+                                    <option>Tinkerer</option>
+                                    <option>Transmuter</option>
+                                    <option>Village Watch</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; color: #aaa"
+                                    >Feature / Quirk</label
+                                >
+                                <input
+                                    type="text"
+                                    id="feature"
+                                    oninput="sync('feature', this.value)"
+                                />
+                            </div>
+                        </div>
+                        <div class="stat-grid mt-2">
+                            <div>
+                                <label style="font-size: 0.8rem; color: #aaa"
+                                    >Experience</label
+                                >
+                                <input
+                                    type="text"
+                                    id="experience"
+                                    class="input-center"
+                                    oninput="sync('experience', this.value)"
+                                />
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; color: #aaa"
+                                    >Status</label
+                                >
+                                <select
+                                    id="statusSelect"
+                                    onchange="sync('status', this.value)"
+                                >
+                                    <option>Active</option>
+                                    <option>Backup</option>
+                                    <option>Retired</option>
+                                    <option>Dead</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cell stat-grid">
+                        <div class="vital-box">
+                            <h2
+                                style="
+                                    border: none;
+                                    margin: 0;
+                                    color: var(--crows-red);
+                                "
+                            >
+                                STAMINA
+                            </h2>
+                            <div class="flex-row mt-2">
+                                <div class="num-ctrl-vert">
+                                    <button
+                                        class="btn-circle"
+                                        onclick="modVal('stamina', 1)"
+                                    >
+                                        +
+                                    </button>
+                                    <span class="val" id="val-stamina">5</span>
+                                    <button
+                                        class="btn-circle"
+                                        onclick="modVal('stamina', -1)"
+                                    >
+                                        -
+                                    </button>
+                                </div>
+                                <span style="font-size: 2rem; color: #555"
+                                    >/</span
+                                >
+                                <div class="num-ctrl-vert">
+                                    <button
+                                        class="btn-circle"
+                                        onclick="modVal('maxStamina', 1)"
+                                    >
+                                        +
+                                    </button>
+                                    <span
+                                        class="val"
+                                        id="val-maxStamina"
+                                        style="color: #aaa"
+                                        >5</span
+                                    >
+                                    <button
+                                        class="btn-circle"
+                                        onclick="modVal('maxStamina', -1)"
+                                    >
+                                        -
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="vital-box">
+                            <h2
+                                style="
+                                    border: none;
+                                    margin: 0;
+                                    color: var(--crows-red);
+                                "
+                            >
+                                SPEED
+                            </h2>
+                            <div class="num-ctrl-horiz mt-2">
+                                <button
+                                    class="btn-circle"
+                                    style="width: 30px; height: 30px"
+                                    onclick="modVal('speed', -1, 0, 20)"
+                                >
+                                    -
+                                </button>
+                                <span
+                                    class="val fell-font"
+                                    style="
+                                        font-size: 2.2rem;
+                                        color: var(--text-main);
+                                        min-width: 40px;
+                                    "
+                                    id="val-speed"
+                                    >5</span
+                                >
+                                <button
+                                    class="btn-circle"
+                                    style="width: 30px; height: 30px"
+                                    onclick="modVal('speed', 1, 0, 20)"
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
+                        <div class="vital-box">
+                            <h2
+                                style="
+                                    border: none;
+                                    margin: 0;
+                                    color: var(--crows-red);
+                                "
+                            >
+                                ARMOR
+                            </h2>
+                            <div class="flex-row mt-2">
+                                <div class="num-ctrl-vert">
+                                    <button
+                                        class="btn-circle"
+                                        onclick="modVal('ad', 1)"
+                                    >
+                                        +
+                                    </button>
+                                    <span class="val" id="val-ad">0</span>
+                                    <button
+                                        class="btn-circle"
+                                        onclick="modVal('ad', -1)"
+                                    >
+                                        -
+                                    </button>
+                                </div>
+                                <span style="font-size: 2rem; color: #555"
+                                    >/</span
+                                >
+                                <div class="num-ctrl-vert">
+                                    <button
+                                        class="btn-circle"
+                                        onclick="modVal('maxAd', 1)"
+                                    >
+                                        +
+                                    </button>
+                                    <span
+                                        class="val"
+                                        id="val-maxAd"
+                                        style="color: #aaa"
+                                        >0</span
+                                    >
+                                    <button
+                                        class="btn-circle"
+                                        onclick="modVal('maxAd', -1)"
+                                    >
+                                        -
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="vital-box">
+                            <h2
+                                style="
+                                    border: none;
+                                    margin: 0;
+                                    color: var(--crows-red);
+                                "
+                            >
+                                CONDITIONS
+                            </h2>
+                            <div
+                                class="flex-row w-full justify-between mt-2"
+                                style="padding: 0 5px"
+                            >
+                                <span
+                                    class="text-grey"
+                                    style="font-size: 0.9rem"
+                                    >Blessed</span
+                                >
+                                <div class="num-ctrl-horiz">
+                                    <button
+                                        class="btn-circle"
+                                        onclick="modVal('blessed', -1, 0)"
+                                    >
+                                        -
+                                    </button>
+                                    <span class="val fell-font" id="val-blessed"
+                                        >0</span
+                                    >
+                                    <button
+                                        class="btn-circle"
+                                        onclick="modVal('blessed', 1, 0)"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+                            <div
+                                class="flex-row w-full justify-between mt-2"
+                                style="padding: 0 5px"
+                            >
+                                <span
+                                    class="text-grey"
+                                    style="font-size: 0.9rem"
+                                    >Boned</span
+                                >
+                                <div class="num-ctrl-horiz">
+                                    <button
+                                        class="btn-circle"
+                                        onclick="modVal('boned', -1, 0)"
+                                    >
+                                        -
+                                    </button>
+                                    <span class="val fell-font" id="val-boned"
+                                        >0</span
+                                    >
+                                    <button
+                                        class="btn-circle"
+                                        onclick="modVal('boned', 1, 0)"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+                            <textarea
+                                id="otherConditions"
+                                rows="1"
+                                class="mt-2"
+                                oninput="sync('otherConditions', this.value)"
+                            ></textarea>
+                        </div>
+                    </div>
+
+                    <div class="cell">
+                        <h2>Attacks & Castings</h2>
+                        <textarea
+                            id="attacks"
+                            rows="5"
+                            placeholder="Weapon | Stat | 12-16 Dmg | 17+ Dmg&#10;Sword | S | 3+S | 6+S"
+                            oninput="sync('attacks', this.value)"
+                        ></textarea>
+                        <h2 class="mt-2" style="border: none; width: 100%">
+                            Traits & Features
+                        </h2>
+                        <textarea
+                            id="traits"
+                            rows="6"
+                            oninput="sync('traits', this.value)"
+                        ></textarea>
+                    </div>
+                </div>
+
+                <div class="column">
+                    <div
+                        class="cell stat-grid"
+                        style="grid-template-columns: repeat(3, 1fr)"
+                    >
+                        <div class="char-box">
+                            <h2>AGL</h2>
+                            <div class="num-ctrl-horiz mt-2">
+                                <button
+                                    class="btn-circle"
+                                    onclick="modStat('agility', -1)"
+                                >
+                                    -
+                                </button>
+                                <span
+                                    class="val fell-font"
+                                    style="font-size: 1.8rem"
+                                    id="val-agility"
+                                    >0</span
+                                >
+                                <button
+                                    class="btn-circle"
+                                    onclick="modStat('agility', 1)"
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
+                        <div class="char-box">
+                            <h2>MIND</h2>
+                            <div class="num-ctrl-horiz mt-2">
+                                <button
+                                    class="btn-circle"
+                                    onclick="modStat('mind', -1)"
+                                >
+                                    -
+                                </button>
+                                <span
+                                    class="val fell-font"
+                                    style="font-size: 1.8rem"
+                                    id="val-mind"
+                                    >0</span
+                                >
+                                <button
+                                    class="btn-circle"
+                                    onclick="modStat('mind', 1)"
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
+                        <div class="char-box">
+                            <h2>STR</h2>
+                            <div class="num-ctrl-horiz mt-2">
+                                <button
+                                    class="btn-circle"
+                                    onclick="modStat('strength', -1)"
+                                >
+                                    -
+                                </button>
+                                <span
+                                    class="val fell-font"
+                                    style="font-size: 1.8rem"
+                                    id="val-strength"
+                                    >0</span
+                                >
+                                <button
+                                    class="btn-circle"
+                                    onclick="modStat('strength', 1)"
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cell">
+                        <h2 style="width: 100%">Skills</h2>
+                        <div
+                            id="skills-container"
+                            style="
+                                height: 780px;
+                                overflow-y: auto;
+                                padding-right: 15px;
+                            "
+                        ></div>
+                    </div>
+                </div>
+
+                <div class="column">
+                    <div class="cell">
+                        <h2>Equipped Gear</h2>
+                        <div class="slot-row">
+                            <span class="slot-label">Hand 1</span>
+                            <input
+                                type="text"
+                                id="hand1"
+                                oninput="
+                                    syncNested('inventory', 'hand1', this.value)
+                                "
+                            />
+                        </div>
+                        <div class="slot-row">
+                            <span class="slot-label">Hand 2</span>
+                            <input
+                                type="text"
+                                id="hand2"
+                                oninput="
+                                    syncNested('inventory', 'hand2', this.value)
+                                "
+                            />
+                        </div>
+                        <div class="slot-row">
+                            <span class="slot-label">Belt 1</span>
+                            <input
+                                type="text"
+                                id="belt1"
+                                oninput="
+                                    syncNested('inventory', 'belt1', this.value)
+                                "
+                            />
+                        </div>
+                        <div class="slot-row">
+                            <span class="slot-label">Belt 2</span>
+                            <input
+                                type="text"
+                                id="belt2"
+                                oninput="
+                                    syncNested('inventory', 'belt2', this.value)
+                                "
+                            />
+                        </div>
+
+                        <h2 class="mt-2">Magic Items</h2>
+                        <div class="slot-row">
+                            <span class="slot-label">Head</span>
+                            <input
+                                type="text"
+                                id="mag_head"
+                                oninput="
+                                    syncNested('magic', 'head', this.value)
+                                "
+                            />
+                        </div>
+                        <div class="slot-row">
+                            <span class="slot-label">Neck</span>
+                            <input
+                                type="text"
+                                id="mag_neck"
+                                oninput="
+                                    syncNested('magic', 'neck', this.value)
+                                "
+                            />
+                        </div>
+                        <div class="slot-row">
+                            <span class="slot-label">Waist</span>
+                            <input
+                                type="text"
+                                id="mag_waist"
+                                oninput="
+                                    syncNested('magic', 'waist', this.value)
+                                "
+                            />
+                        </div>
+                        <div class="slot-row">
+                            <span class="slot-label">Arms</span>
+                            <input
+                                type="text"
+                                id="mag_arms"
+                                oninput="
+                                    syncNested('magic', 'arms', this.value)
+                                "
+                            />
+                        </div>
+                        <div class="slot-row">
+                            <span class="slot-label">Finger</span>
+                            <input
+                                type="text"
+                                id="mag_finger"
+                                oninput="
+                                    syncNested('magic', 'finger', this.value)
+                                "
+                            />
+                        </div>
+                        <div class="slot-row">
+                            <span class="slot-label">Feet</span>
+                            <input
+                                type="text"
+                                id="mag_feet"
+                                oninput="
+                                    syncNested('magic', 'feet', this.value)
+                                "
+                            />
+                        </div>
+                    </div>
+
+                    <div class="cell" id="backpack-container"></div>
+
+                    <div class="cell">
+                        <div class="flex-row justify-between w-full">
+                            <button
+                                id="btn-notes"
+                                class="btn-toggle-header"
+                                onclick="
+                                    openTextModal('notes', 'Character Notes')
+                                "
+                            >
+                                Notes
+                            </button>
+                            <button
+                                id="btn-xplog"
+                                class="btn-toggle-header"
+                                onclick="openTextModal('xplog', 'XP Log')"
+                            >
+                                XP Log
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <p
+                    style="
+                        font-size: 0.8rem;
+                        color: #aaa;
+                        padding-top: 0px;
+                        margin-top: 0px;
+                    "
+            </main>
+        </div>
+
+        <div id="jsonModal" class="modal-overlay">
+            <div class="modal-content">
+                <h2 style="color: var(--crows-red); margin-bottom: 10px">
+                    JSON ACCESS
+                </h2>
+                <textarea
+                    id="jsonTextArea"
+                    rows="15"
+                    style="
+                        width: 100%;
+                        box-sizing: border-box;
+                        margin-bottom: 15px;
+                        resize: none;
+                    "
+                ></textarea>
+                <div class="flex-row justify-between">
+                    <button class="btn-action" onclick="closeJsonModal()">
+                        Cancel
+                    </button>
+                    <button
+                        class="btn-action"
+                        style="background: var(--crows-red)"
+                        onclick="saveJsonModal()"
+                    >
+                        Apply & Overwrite
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="textModal" class="modal-overlay">
+            <div class="modal-content">
+                <h2
+                    id="textModalTitle"
+                    style="color: var(--crows-red); margin-bottom: 10px"
+                >
+                    Info Editor
+                </h2>
+                <textarea
+                    id="textModalTextArea"
+                    rows="12"
+                    style="
+                        width: 100%;
+                        box-sizing: border-box;
+                        margin-bottom: 15px;
+                        font-family: &quot;Inter&quot;, sans-serif;
+                        background: #2a2a2a;
+                        color: white;
+                        border: 1px solid #444;
+                        padding: 0.5rem;
+                    "
+                ></textarea>
+                <div class="flex-row justify-between">
+                    <button class="btn-action" onclick="closeTextModal()">
+                        Cancel
+                    </button>
+                    <button
+                        class="btn-action"
+                        style="background: var(--crows-red)"
+                        onclick="saveTextModal()"
+                    >
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const SKILL_LIST = {
+                General: [
+                    "Alchemy",
+                    "Blacksmithing",
+                    "Climb",
+                    "Enchanting",
+                    "Endurance",
+                    "Gymnastics",
+                    "Handle Animal",
+                    "Hide",
+                    "Historical Lore",
+                    "Jump",
+                    "Lift",
+                    "Magic Lore",
+                    "Monster Lore",
+                    "Nature Lore",
+                    "Navigate",
+                    "Pick Lock",
+                    "Religious Lore",
+                    "Sabotage",
+                    "Search",
+                    "Sleight of Hand",
+                    "Sneak",
+                    "Swim",
+                ],
+                Spellcasting: [
+                    "Alteration",
+                    "Benefaction",
+                    "Conjuration",
+                    "Elemental",
+                    "Illusion",
+                    "Necromancy",
+                ],
+                Weapon: [
+                    "Bashing",
+                    "Bow",
+                    "Chopping",
+                    "Slashing",
+                    "Stabbing",
+                    "Unarmed",
+                ],
+            };
+
+            let roster = {};
+            let currentCharName = "";
+            let currentOpenModal = null;
+            let currentTextFieldTarget = "";
+
+            function getBlankChar(name) {
+                return {
+                    name: name,
+                    feature: "",
+                    background: "",
+                    experience: "0/0",
+                    status: "Active",
+                    stamina: 5,
+                    maxStamina: 5,
+                    ad: 0,
+                    maxAd: 0,
+                    speed: 5,
+                    blessed: 0,
+                    boned: 0,
+                    otherConditions: "",
+                    attacks: "",
+                    traits: "",
+                    notes: "",
+                    xplog: "",
+                    stats: { agility: 0, mind: 0, strength: 0 },
+                    skills: {},
+                    inventory: { hand1: "", hand2: "", belt1: "", belt2: "" },
+                    magic: {
+                        head: "",
+                        neck: "",
+                        waist: "",
+                        arms: "",
+                        finger: "",
+                        feet: "",
+                    },
+                    backpack: Array(10).fill(""),
+                    backpackWounds: Array(10).fill(false),
+                };
+            }
+
+            let char = getBlankChar(currentCharName);
+
+            function init() {
+                renderSkills();
+                loadData();
+                document.addEventListener("click", function (e) {
+                    if (!e.target.closest(".custom-dropdown")) {
+                        document
+                            .getElementById("rosterList")
+                            .classList.remove("open");
+                    }
+                });
+                document.addEventListener("keydown", function (e) {
+                    if (e.key === "Escape" || e.key === "Esc") {
+                        if (currentOpenModal === "json") {
+                            closeJsonModal();
+                        } else if (currentOpenModal === "text") {
+                            saveTextModal();
+                        }
+                    }
+                });
+            }
+
+            function toggleDropdown() {
+                const list = document.getElementById("rosterList");
+                list.classList.toggle("open");
+                renderDropdownList();
+            }
+
+            function renderDropdownList() {
+                const list = document.getElementById("rosterList");
+                list.innerHTML = "";
+
+                let newCharLi = document.createElement("li");
+                newCharLi.innerText = "+ New Character...";
+                newCharLi.className = "new-char-opt";
+                newCharLi.onclick = () => newCharacter();
+                list.appendChild(newCharLi);
+
+                for (let name in roster) {
+                    if (!name) continue;
+                    let li = document.createElement("li");
+                    li.innerText = name;
+                    li.onclick = () => switchCharacter(name);
+                    list.appendChild(li);
+                }
+            }
+
+            function updateName(newName) {
+                newName = newName.trim();
+                if (!newName) return;
+
+                if (newName !== currentCharName) {
+                    char.name = newName;
+                    roster[newName] = char;
+                    if (currentCharName && roster[currentCharName]) {
+                        delete roster[currentCharName];
+                    }
+                    currentCharName = newName;
+                    saveData();
+                    renderDropdownList();
+                }
+            }
+
+            function switchCharacter(name) {
+                if (roster[name] && name !== currentCharName) {
+                    char = roster[name];
+                    currentCharName = name;
+                    document
+                        .getElementById("rosterList")
+                        .classList.remove("open");
+                    localStorage.setItem("crows_last_active", currentCharName);
+                    updateAllUI();
+                }
+            }
+
+            function newCharacter() {
+                document.getElementById("rosterList").classList.remove("open");
+                let name = prompt("Enter new character name:");
+                if (name) {
+                    name = name.trim();
+                    if (roster[name]) {
+                        alert("Character already exists!");
+                        return;
+                    }
+                    char = getBlankChar(name);
+                    currentCharName = name;
+                    roster[name] = char;
+
+                    localStorage.setItem(
+                        "crows_roster",
+                        JSON.stringify(roster),
+                    );
+                    localStorage.setItem("crows_last_active", currentCharName);
+                    updateAllUI();
+                    renderDropdownList();
+                }
+            }
+
+            function deleteCharacter() {
+                if (!currentCharName) return;
+                if (confirm(`Delete ${char.name}?`)) {
+                    delete roster[currentCharName];
+                    const remaining = Object.keys(roster).filter(
+                        (n) => n !== "",
+                    );
+
+                    if (remaining.length > 0) {
+                        char = roster[remaining[0]];
+                        currentCharName = remaining[0];
+                    } else {
+                        char = getBlankChar("");
+                        currentCharName = "";
+                    }
+
+                    localStorage.setItem(
+                        "crows_roster",
+                        JSON.stringify(roster),
+                    );
+                    localStorage.setItem("crows_last_active", currentCharName);
+
+                    updateAllUI();
+                    renderDropdownList();
+                }
+            }
+
+            function sync(key, val) {
+                char[key] = val;
+                saveData();
+            }
+            function syncNested(category, key, val) {
+                char[category][key] = val;
+                saveData();
+            }
+            function updateBackpackItem(index, value) {
+                char.backpack[index] = value;
+                saveData();
+            }
+
+            function toggleWound(index) {
+                if (!char.backpackWounds)
+                    char.backpackWounds = Array(10).fill(false);
+                char.backpackWounds[index] = !char.backpackWounds[index];
+                renderBackpack();
+                saveData();
+            }
+
+            function modVal(key, delta, min = -9999, max = 9999) {
+                let current = parseInt(char[key]) || 0;
+                let newVal = current + delta;
+                if (newVal >= min && newVal <= max) {
+                    char[key] = newVal;
+                    let el = document.getElementById(`val-${key}`);
+                    if (el) el.innerText = newVal;
+                    saveData();
+                }
+            }
+
+            function modStat(stat, delta) {
+                let current = parseInt(char.stats[stat]) || 0;
+                let newVal = current + delta;
+                if (newVal >= -5 && newVal <= 5) {
+                    char.stats[stat] = newVal;
+                    document.getElementById(`val-${stat}`).innerText = newVal;
+                    saveData();
+                }
+            }
+
+            function modSkill(skillName, delta) {
+                let current = parseInt(char.skills[skillName]) || 0;
+                let newVal = current + delta;
+                if (newVal >= 0 && newVal <= 2) {
+                    char.skills[skillName] = newVal;
+                    document.getElementById(
+                        `skill_${skillName.replace(/\s+/g, "")}`,
+                    ).innerText = newVal;
+                    saveData();
+                }
+            }
+
+            function renderSkills() {
+                const container = document.getElementById("skills-container");
+                let html = "";
+                for (const [category, skills] of Object.entries(SKILL_LIST)) {
+                    html += `<div class="skill-group-title">${category}</div>`;
+                    skills.forEach((skill) => {
+                        let safeId = skill.replace(/\s+/g, "");
+                        html += `
+                            <div class="skill-row">
+                                <span>${skill}</span>
+                                <div class="num-ctrl-horiz">
+                                    <button class="btn-circle" onclick="modSkill('${skill}', -1)">-</button>
+                                    <span class="val fell-font" style="font-size:1.4rem" id="skill_${safeId}">0</span>
+                                    <button class="btn-circle" onclick="modSkill('${skill}', 1)">+</button>
+                                </div>
+                            </div>`;
+                    });
+                }
+                container.innerHTML = html;
+            }
+
+            function renderBackpack() {
+                const container = document.getElementById("backpack-container");
+                let html = `<h2>Backpack <span style="font-size: 0.8rem; color: #888; text-transform:none; font-family:'Inter', sans-serif; font-weight:normal;">(Wounds)</span></h2>`;
+
+                for (let i = 0; i < 10; i++) {
+                    let slotNum = i + 1;
+                    let val = char.backpack[i] || "";
+                    let isWounded =
+                        char.backpackWounds && char.backpackWounds[i];
+
+                    html += `<div class="slot-row">
+                                <span class="slot-label" style="width:20px;">${slotNum}.</span>
+                                <input type="text" id="bp_item_${i}" class="${isWounded ? "wound-slot" : ""}" value="${val}" oninput="updateBackpackItem(${i}, this.value)" ${isWounded ? "disabled" : ""}>
+                                <input type="checkbox" class="wound-cb" ${isWounded ? "checked" : ""} onchange="toggleWound(${i})" title="Mark Wound">
+                            </div>`;
+                }
+                container.innerHTML = html;
+            }
+
+            function openJsonModal() {
+                currentOpenModal = "json";
+                document.getElementById("jsonTextArea").value = JSON.stringify(
+                    roster,
+                    null,
+                    4,
+                );
+                document.getElementById("jsonModal").classList.add("open");
+            }
+
+            function closeJsonModal() {
+                currentOpenModal = null;
+                document.getElementById("jsonModal").classList.remove("open");
+            }
+
+            function saveJsonModal() {
+                try {
+                    const parsed = JSON.parse(
+                        document.getElementById("jsonTextArea").value,
+                    );
+                    if (typeof parsed !== "object" || parsed === null)
+                        throw new Error();
+
+                    roster = parsed;
+                    localStorage.setItem(
+                        "crows_roster",
+                        JSON.stringify(roster),
+                    );
+
+                    const remaining = Object.keys(roster).filter(
+                        (n) => n !== "",
+                    );
+                    if (remaining.length > 0) {
+                        if (
+                            localStorage.getItem("crows_last_active") &&
+                            roster[localStorage.getItem("crows_last_active")]
+                        ) {
+                            char =
+                                roster[
+                                    localStorage.getItem("crows_last_active")
+                                ];
+                            currentCharName =
+                                localStorage.getItem("crows_last_active");
+                        } else {
+                            char = roster[remaining[0]];
+                            currentCharName = remaining[0];
+                            localStorage.setItem(
+                                "crows_last_active",
+                                currentCharName,
+                            );
+                        }
+                    } else {
+                        char = getBlankChar("");
+                        currentCharName = "";
+                        localStorage.setItem("crows_last_active", "");
+                    }
+
+                    updateAllUI();
+                    closeJsonModal();
+                } catch (e) {
+                    alert(
+                        "Invalid JSON format! Review fields, arrays, and braces syntax carefully.",
+                    );
+                }
+            }
+
+            function openTextModal(field, title) {
+                currentOpenModal = "text";
+                currentTextFieldTarget = field;
+                document.getElementById("textModalTitle").innerText = title;
+                document.getElementById("textModalTextArea").value =
+                    char[field] || "";
+                document.getElementById("textModal").classList.add("open");
+            }
+
+            function closeTextModal() {
+                currentOpenModal = null;
+                currentTextFieldTarget = "";
+                document.getElementById("textModal").classList.remove("open");
+            }
+
+            function saveTextModal() {
+                if (currentTextFieldTarget) {
+                    char[currentTextFieldTarget] =
+                        document.getElementById("textModalTextArea").value;
+                    saveData();
+                    updateButtonBorders();
+                }
+                closeTextModal();
+            }
+
+            function updateButtonBorders() {
+                const notesBtn = document.getElementById("btn-notes");
+                const xplogBtn = document.getElementById("btn-xplog");
+
+                if (!char.notes || char.notes.trim() === "") {
+                    notesBtn.className = "btn-toggle-header is-empty";
+                } else {
+                    notesBtn.className = "btn-toggle-header has-content";
+                }
+
+                if (!char.xplog || char.xplog.trim() === "") {
+                    xplogBtn.className = "btn-toggle-header is-empty";
+                } else {
+                    xplogBtn.className = "btn-toggle-header has-content";
+                }
+            }
+
+            function saveData() {
+                if (!currentCharName) return;
+                roster[currentCharName] = char;
+                localStorage.setItem("crows_roster", JSON.stringify(roster));
+                localStorage.setItem("crows_last_active", currentCharName);
+            }
+
+            function loadData() {
+                const data = localStorage.getItem("crows_roster");
+                const lastActive = localStorage.getItem("crows_last_active");
+
+                if (data) {
+                    roster = JSON.parse(data);
+                    if (roster["Unnamed Crow"]) delete roster["Unnamed Crow"];
+
+                    for (let name in roster) {
+                        if (roster[name].status === "Alive") {
+                            roster[name].status = "Active";
+                        }
+                    }
+
+                    if (lastActive && roster[lastActive]) {
+                        char = roster[lastActive];
+                        currentCharName = lastActive;
+                    } else {
+                        const first = Object.keys(roster).filter(
+                            (n) => n !== "",
+                        )[0];
+                        if (first) {
+                            char = roster[first];
+                            currentCharName = first;
+                        }
+                    }
+                }
+                updateAllUI();
+            }
+
+            function updateAllUI() {
+                if (char.speed === undefined) char.speed = 5;
+                if (!char.backpackWounds)
+                    char.backpackWounds = Array(10).fill(false);
+                if (char.experience === undefined) char.experience = "0/0";
+                if (char.status === undefined || char.status === "Alive")
+                    char.status = "Active";
+                if (char.xplog === undefined) char.xplog = "";
+
+                document.getElementById("charName").value = char.name || "";
+                document.getElementById("bgSelect").value =
+                    char.background || "";
+                document.getElementById("feature").value = char.feature || "";
+                document.getElementById("experience").value = char.experience;
+                document.getElementById("statusSelect").value = char.status;
+                document.getElementById("otherConditions").value =
+                    char.otherConditions || "";
+
+                document.getElementById("val-stamina").innerText =
+                    char.stamina || 0;
+                document.getElementById("val-maxStamina").innerText =
+                    char.maxStamina || 5;
+                document.getElementById("val-ad").innerText = char.ad || 0;
+                document.getElementById("val-maxAd").innerText =
+                    char.maxAd || 0;
+                document.getElementById("val-speed").innerText = char.speed;
+                document.getElementById("val-blessed").innerText =
+                    char.blessed || 0;
+                document.getElementById("val-boned").innerText =
+                    char.boned || 0;
+
+                document.getElementById("attacks").value = char.attacks || "";
+                document.getElementById("traits").value = char.traits || "";
+
+                document.getElementById("val-agility").innerText =
+                    char.stats.agility || 0;
+                document.getElementById("val-mind").innerText =
+                    char.stats.mind || 0;
+                document.getElementById("val-strength").innerText =
+                    char.stats.strength || 0;
+
+                document
+                    .querySelectorAll('[id^="skill_"]')
+                    .forEach((el) => (el.innerText = "0"));
+                if (char.skills) {
+                    for (const [skill, val] of Object.entries(char.skills)) {
+                        let el = document.getElementById(
+                            `skill_${skill.replace(/\s+/g, "")}`,
+                        );
+                        if (el) el.innerText = val;
+                    }
+                }
+
+                document.getElementById("hand1").value =
+                    char.inventory.hand1 || "";
+                document.getElementById("hand2").value =
+                    char.inventory.hand2 || "";
+                document.getElementById("belt1").value =
+                    char.inventory.belt1 || "";
+                document.getElementById("belt2").value =
+                    char.inventory.belt2 || "";
+
+                document.getElementById("mag_head").value =
+                    char.magic.head || "";
+                document.getElementById("mag_neck").value =
+                    char.magic.neck || "";
+                document.getElementById("mag_waist").value =
+                    char.magic.waist || "";
+                document.getElementById("mag_arms").value =
+                    char.magic.arms || "";
+                document.getElementById("mag_finger").value =
+                    char.magic.finger || "";
+                document.getElementById("mag_feet").value =
+                    char.magic.feet || "";
+
+                renderBackpack();
+                updateButtonBorders();
+            }
+
+            init();
+        </script>
+    </body>
+</html>
+ <!--
+    Feel free to modify and redistribute sheet, but please keep this section. If you make improvements email me at benskantor@gmail.com and I will update this and credit you.
+    Credit:
+        Max Paulus - https://github.com/maxpaulus43 - Shadowheart sheet used as basic template
+        Ben Kantor - https://benkantor.com - Made full sheet
+ -->
