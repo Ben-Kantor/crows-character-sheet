@@ -373,6 +373,8 @@
                 border: 1px solid var(--border-gray);
                 font-family: "Inter", sans-serif;
                 font-size: 0.85rem;
+                width: 100%;
+                box-sizing: border-box;
             }
             .btn-action:hover {
                 background: var(--crows-red);
@@ -383,12 +385,11 @@
             }
 
             .header-controls {
-                display: flex;
+                display: grid;
+                grid-template-columns: repeat(2, minmax(50px, 1fr));
                 gap: 4px;
-                flex-wrap: nowrap;
-                flex-direction: column;
-                justify-content: flex-end;
                 align-items: center;
+                justify-items: stretch;
             }
 
             .input-center {
@@ -443,7 +444,7 @@
                                     id="btn-roman-toggle"
                                     onclick="toggleRomanNumerals()"
                                 >
-                                    Nums
+                                    IVX
                                 </button>
                                 <button
                                     class="btn-action"
@@ -457,9 +458,15 @@
                                 >
                                     Delete
                                 </button>
+                                <button
+                                    class="btn-action"
+                                    onclick="triggerRest()"
+                                >
+                                    Rest
+                                </button>
                             </div>
                         </div>
-                        <div>
+                        <div class="mt-2">
                             <label style="font-size: 0.8rem; color: #aaa"
                                 >Name</label
                             >
@@ -1190,6 +1197,32 @@
                 updateAllUI();
             }
 
+            function triggerRest() {
+                if (!currentCharName) return;
+
+                const message = "Please do the following manually:\n\n" +
+                                "Remove one ration from an inventory\n" +
+                                "Repair up to one item\n" +
+                                "Reset any magic item usage dice\n\n" +
+                                "Do you wish to complete the rest?";
+
+                if (confirm(message)) {
+                    // Reset stamina to max
+                    char.stamina = parseInt(char.maxStamina) || 5;
+
+                    // Remove the first wound found in the backpack arrays
+                    if (char.backpackWounds) {
+                        const firstWoundIdx = char.backpackWounds.indexOf(true);
+                        if (firstWoundIdx !== -1) {
+                            char.backpackWounds[firstWoundIdx] = false;
+                        }
+                    }
+
+                    saveData();
+                    updateAllUI();
+                }
+            }
+
             function init() {
                 const storedRomanSetting = localStorage.getItem("crows_use_roman");
                 if (storedRomanSetting !== null) {
@@ -1563,6 +1596,7 @@
             function updateAllUI() {
                 // Update modern vs roman state properties on the DOM layout
                 document.body.setAttribute("data-roman-mode", useRomanNumerals);
+                document.getElementById("btn-roman-toggle").innerText = useRomanNumerals ? "IVX" : "123";
 
                 if (char.speed === undefined) char.speed = 5;
                 if (!char.backpackWounds)
