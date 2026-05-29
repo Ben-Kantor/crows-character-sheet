@@ -164,8 +164,7 @@
             .num-ctrl-horiz .val {
                 min-width: 20px;
                 text-align: center;
-                font-weight: bold;
-                font-size: 1.1rem;
+                transition: font-size 0.15s ease;
             }
 
             .num-ctrl-vert {
@@ -180,6 +179,26 @@
                 line-height: 1;
                 min-width: 30px;
                 text-align: center;
+                transition: font-size 0.15s ease;
+            }
+
+            /* Boost numbers by x1.5 when roman numerals are disabled */
+            body[data-roman-mode="false"] .num-ctrl-horiz .val {
+                transform: scale(1.8) translateY(-3px);
+                display: inline-block; /* Ensures transform applies cleanly */
+                pointer-events: none;
+            }
+
+            body[data-roman-mode="false"] .num-ctrl-vert .val {
+                transform: scale(1.8) translateY(-4px);
+                display: inline-block;
+                pointer-events: none;
+            }
+
+            body[data-roman-mode="false"] .skill-row .val {
+                transform: scale(1.8) translateY(-3px);
+                display: inline-block;
+                pointer-events: none;
             }
 
             .stat-grid {
@@ -191,7 +210,7 @@
             .char-box {
                 text-align: center;
                 background: #000;
-                padding: 10px 5px;
+                padding: 10px 0px;
                 border-radius: 6px;
                 border: 1px solid var(--border-gray);
                 display: flex;
@@ -359,11 +378,17 @@
                 background: var(--crows-red);
             }
 
+            .header-controls .btn-action {
+                font-size: 0.65rem;
+            }
+
             .header-controls {
                 display: flex;
-                gap: 5px;
+                gap: 4px;
                 flex-wrap: nowrap;
+                flex-direction: column;
                 justify-content: flex-end;
+                align-items: center;
             }
 
             .input-center {
@@ -415,6 +440,13 @@
                             <div class="header-controls">
                                 <button
                                     class="btn-action"
+                                    id="btn-roman-toggle"
+                                    onclick="toggleRomanNumerals()"
+                                >
+                                    Nums
+                                </button>
+                                <button
+                                    class="btn-action"
                                     onclick="openJsonModal()"
                                 >
                                     JSON
@@ -427,7 +459,7 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="mt-2">
+                        <div>
                             <label style="font-size: 0.8rem; color: #aaa"
                                 >Name</label
                             >
@@ -549,7 +581,7 @@
                                     >
                                         +
                                     </button>
-                                    <span class="val" id="val-stamina">5</span>
+                                    <span class="val" id="val-stamina">V</span>
                                     <button
                                         class="btn-circle"
                                         onclick="modVal('stamina', -1)"
@@ -571,7 +603,7 @@
                                         class="val"
                                         id="val-maxStamina"
                                         style="color: #aaa"
-                                        >5</span
+                                        >V</span
                                     >
                                     <button
                                         class="btn-circle"
@@ -608,7 +640,7 @@
                                         min-width: 40px;
                                     "
                                     id="val-speed"
-                                    >5</span
+                                    >V</span
                                 >
                                 <button
                                     class="btn-circle"
@@ -969,7 +1001,7 @@
                                     openTextModal('notes', 'Character Notes')
                                 "
                             >
-                                Notes
+                                Character Notes
                             </button>
                             <button
                                 id="btn-xplog"
@@ -981,13 +1013,6 @@
                         </div>
                     </div>
                 </div>
-                <p
-                    style="
-                        font-size: 0.8rem;
-                        color: #aaa;
-                        padding-top: 0px;
-                        margin-top: 0px;
-                    "
             </main>
         </div>
 
@@ -1036,7 +1061,7 @@
                         width: 100%;
                         box-sizing: border-box;
                         margin-bottom: 15px;
-                        font-family: &quot;Inter&quot;, sans-serif;
+                        font-family: 'Inter', sans-serif;
                         background: #2a2a2a;
                         color: white;
                         border: 1px solid #444;
@@ -1106,6 +1131,7 @@
             let currentCharName = "";
             let currentOpenModal = null;
             let currentTextFieldTarget = "";
+            let useRomanNumerals = true;
 
             function getBlankChar(name) {
                 return {
@@ -1144,7 +1170,34 @@
 
             let char = getBlankChar(currentCharName);
 
+            function formatNumber(num) {
+                if (!useRomanNumerals) return num;
+                if (num == 0) return "O";
+                if (isNaN(num) || num <= 0 || num > 3999) return num;
+                var M = ["", "M", "MM", "MMM"];
+                var C = ["", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM"];
+                var X = ["", "X", "XX", "XXX", "XL", "L", "LX", "LXX", "LXXX", "XC"];
+                var I = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"];
+                return M[Math.floor(num / 1000)] +
+                       C[Math.floor((num % 1000) / 100)] +
+                       X[Math.floor((num % 100) / 10)] +
+                       I[num % 10];
+            }
+
+            function toggleRomanNumerals() {
+                useRomanNumerals = !useRomanNumerals;
+                localStorage.setItem("crows_use_roman", useRomanNumerals);
+                updateAllUI();
+            }
+
             function init() {
+                const storedRomanSetting = localStorage.getItem("crows_use_roman");
+                if (storedRomanSetting !== null) {
+                    useRomanNumerals = storedRomanSetting === "true";
+                } else {
+                    useRomanNumerals = true;
+                }
+
                 renderSkills();
                 loadData();
                 document.addEventListener("click", function (e) {
@@ -1295,7 +1348,7 @@
                 if (newVal >= min && newVal <= max) {
                     char[key] = newVal;
                     let el = document.getElementById(`val-${key}`);
-                    if (el) el.innerText = newVal;
+                    if (el) el.innerText = formatNumber(newVal);
                     saveData();
                 }
             }
@@ -1305,7 +1358,7 @@
                 let newVal = current + delta;
                 if (newVal >= -5 && newVal <= 5) {
                     char.stats[stat] = newVal;
-                    document.getElementById(`val-${stat}`).innerText = newVal;
+                    document.getElementById(`val-${stat}`).innerText = formatNumber(newVal);
                     saveData();
                 }
             }
@@ -1317,7 +1370,7 @@
                     char.skills[skillName] = newVal;
                     document.getElementById(
                         `skill_${skillName.replace(/\s+/g, "")}`,
-                    ).innerText = newVal;
+                    ).innerText = formatNumber(newVal);
                     saveData();
                 }
             }
@@ -1411,7 +1464,7 @@
                             localStorage.setItem(
                                 "crows_last_active",
                                 currentCharName,
-                            );
+                              );
                         }
                     } else {
                         char = getBlankChar("");
@@ -1508,6 +1561,9 @@
             }
 
             function updateAllUI() {
+                // Update modern vs roman state properties on the DOM layout
+                document.body.setAttribute("data-roman-mode", useRomanNumerals);
+
                 if (char.speed === undefined) char.speed = 5;
                 if (!char.backpackWounds)
                     char.backpackWounds = Array(10).fill(false);
@@ -1526,37 +1582,37 @@
                     char.otherConditions || "";
 
                 document.getElementById("val-stamina").innerText =
-                    char.stamina || 0;
+                    formatNumber(char.stamina || 0);
                 document.getElementById("val-maxStamina").innerText =
-                    char.maxStamina || 5;
-                document.getElementById("val-ad").innerText = char.ad || 0;
+                    formatNumber(char.maxStamina || 5);
+                document.getElementById("val-ad").innerText = formatNumber(char.ad || 0);
                 document.getElementById("val-maxAd").innerText =
-                    char.maxAd || 0;
-                document.getElementById("val-speed").innerText = char.speed;
+                    formatNumber(char.maxAd || 0);
+                document.getElementById("val-speed").innerText = formatNumber(char.speed);
                 document.getElementById("val-blessed").innerText =
-                    char.blessed || 0;
+                    formatNumber(char.blessed || 0);
                 document.getElementById("val-boned").innerText =
-                    char.boned || 0;
+                    formatNumber(char.boned || 0);
 
                 document.getElementById("attacks").value = char.attacks || "";
                 document.getElementById("traits").value = char.traits || "";
 
                 document.getElementById("val-agility").innerText =
-                    char.stats.agility || 0;
+                    formatNumber(char.stats.agility || 0);
                 document.getElementById("val-mind").innerText =
-                    char.stats.mind || 0;
+                    formatNumber(char.stats.mind || 0);
                 document.getElementById("val-strength").innerText =
-                    char.stats.strength || 0;
+                    formatNumber(char.stats.strength || 0);
 
                 document
                     .querySelectorAll('[id^="skill_"]')
-                    .forEach((el) => (el.innerText = "0"));
+                    .forEach((el) => (el.innerText = formatNumber(0)));
                 if (char.skills) {
                     for (const [skill, val] of Object.entries(char.skills)) {
                         let el = document.getElementById(
                             `skill_${skill.replace(/\s+/g, "")}`,
                         );
-                        if (el) el.innerText = val;
+                        if (el) el.innerText = formatNumber(val);
                     }
                 }
 
@@ -1590,9 +1646,3 @@
         </script>
     </body>
 </html>
- <!--
-    Feel free to modify and redistribute sheet, but please keep this section. If you make improvements email me at benskantor@gmail.com and I will update this and credit you.
-    Credit:
-        Max Paulus - https://github.com/maxpaulus43 - Shadowheart sheet used as basic template
-        Ben Kantor - https://benkantor.com - Made full sheet
- -->
