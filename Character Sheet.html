@@ -65,7 +65,6 @@
                 border-radius: 5px;
                 color: white;
                 cursor: pointer;
-                padding: 0 0 2px 0;
                 text-align: left;
                 width: auto;
                 letter-spacing: 1px;
@@ -182,23 +181,16 @@
                 transition: font-size 0.15s ease;
             }
 
-            /* Boost numbers by x1.5 when roman numerals are disabled */
-            body[data-roman-mode="false"] .num-ctrl-horiz .val {
+            body[data-roman-mode="false"] .num-ctrl-horiz .val,
+            body[data-roman-mode="false"] .num-ctrl-vert .val,
+            body[data-roman-mode="false"] .skill-row .val {
                 transform: scale(1.8) translateY(-3px);
-                display: inline-block; /* Ensures transform applies cleanly */
+                display: inline-block;
                 pointer-events: none;
             }
 
             body[data-roman-mode="false"] .num-ctrl-vert .val {
                 transform: scale(1.8) translateY(-4px);
-                display: inline-block;
-                pointer-events: none;
-            }
-
-            body[data-roman-mode="false"] .skill-row .val {
-                transform: scale(1.8) translateY(-3px);
-                display: inline-block;
-                pointer-events: none;
             }
 
             .stat-grid {
@@ -302,6 +294,7 @@
                 border-bottom-right-radius: 4px;
                 cursor: pointer;
                 padding: 0 10px;
+                transition: all 0.3s ease;
             }
             .custom-dropdown button:hover {
                 background: #333;
@@ -426,6 +419,94 @@
                 color: #00ff00;
                 font-size: 0.9rem;
             }
+
+            .wizard-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.85);
+                z-index: 2000;
+                justify-content: center;
+                align-items: center;
+            }
+            .wizard-overlay.open {
+                display: flex;
+            }
+            .wizard-content {
+                background: #1f1f1f;
+                border: 1px solid var(--crows-red);
+                padding: 20px;
+                border-radius: 6px;
+                width: 95%;
+                max-width: 700px;
+                max-height: 90vh;
+                display: flex;
+                flex-direction: column;
+            }
+            .wizard-body {
+                flex-grow: 1;
+                overflow-y: auto;
+                margin-bottom: 15px;
+            }
+            .wizard-footer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-top: 1px solid #444;
+                padding-top: 10px;
+            }
+            .wizard-step {
+                display: none;
+            }
+            .wizard-step.active {
+                display: block;
+            }
+
+            .bg-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.85rem;
+                margin-bottom: 10px;
+            }
+            .bg-table th,
+            .bg-table td {
+                border: 1px solid #444;
+                padding: 4px 8px;
+                text-align: left;
+                cursor: pointer;
+            }
+            .bg-table tr:hover {
+                background: #2a2a2a;
+            }
+            .bg-table tr.selected {
+                background: var(--crows-red);
+                color: white;
+            }
+
+            .wiz-stat-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 10px;
+                text-align: center;
+            }
+            .wiz-stat-box {
+                background: #000;
+                padding: 10px;
+                border: 1px solid #444;
+                border-radius: 4px;
+            }
+
+            .btn-red-mid {
+                background: var(--crows-red) !important;
+                color: white !important;
+            }
+            .disabled {
+                opacity: 0.5;
+                pointer-events: none;
+            }
         </style>
     </head>
     <body>
@@ -477,7 +558,12 @@
                                     oninput="updateName(this.value)"
                                     autocomplete="off"
                                 />
-                                <button onclick="toggleDropdown()">▼</button>
+                                <button
+                                    id="dropdownToggleBtn"
+                                    onclick="toggleDropdown()"
+                                >
+                                    ▼
+                                </button>
                                 <ul id="rosterList" class="dropdown-menu"></ul>
                             </div>
                         </div>
@@ -933,7 +1019,6 @@
                                 "
                             />
                         </div>
-
                         <h2 class="mt-2">Magic Items</h2>
                         <div class="slot-row">
                             <span class="slot-label">Head</span>
@@ -996,9 +1081,7 @@
                             />
                         </div>
                     </div>
-
                     <div class="cell" id="backpack-container"></div>
-
                     <div class="cell">
                         <div class="flex-row justify-between w-full">
                             <button
@@ -1028,16 +1111,7 @@
                 <h2 style="color: var(--crows-red); margin-bottom: 10px">
                     JSON ACCESS
                 </h2>
-                <textarea
-                    id="jsonTextArea"
-                    rows="15"
-                    style="
-                        width: 100%;
-                        box-sizing: border-box;
-                        margin-bottom: 15px;
-                        resize: none;
-                    "
-                ></textarea>
+                <textarea id="jsonTextArea" rows="15"></textarea>
                 <div class="flex-row justify-between">
                     <button class="btn-action" onclick="closeJsonModal()">
                         Cancel
@@ -1065,10 +1139,6 @@
                     id="textModalTextArea"
                     rows="12"
                     style="
-                        width: 100%;
-                        box-sizing: border-box;
-                        margin-bottom: 15px;
-                        font-family: 'Inter', sans-serif;
                         background: #2a2a2a;
                         color: white;
                         border: 1px solid #444;
@@ -1085,6 +1155,174 @@
                         onclick="saveTextModal()"
                     >
                         Save
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="wizardModal" class="wizard-overlay">
+            <div class="wizard-content">
+                <h2 style="color: var(--crows-red); margin-bottom: 10px">
+                    Generate Character
+                </h2>
+                <div class="wizard-body">
+                    <div id="wizStep1" class="wizard-step active">
+                        <div
+                            class="flex-row justify-between"
+                            style="margin-bottom: 10px"
+                        >
+                            <span>Select a Background</span>
+                            <button
+                                class="btn-action"
+                                style="width: auto"
+                                onclick="wizRollBg()"
+                            >
+                                Roll 2d6
+                            </button>
+                        </div>
+                        <div
+                            style="
+                                max-height: 300px;
+                                overflow-y: auto;
+                                border: 1px solid #444;
+                            "
+                        >
+                            <table class="bg-table" id="bgTable"></table>
+                        </div>
+                        <div
+                            id="bgDetails"
+                            style="
+                                margin-top: 10px;
+                                font-size: 0.85rem;
+                                min-height: 80px;
+                            "
+                        ></div>
+                    </div>
+                    <div id="wizStep2" class="wizard-step">
+                        <div class="stat-grid mt-2" style="margin-bottom: 20px">
+                            <div>
+                                <label style="font-size: 0.8rem; color: #aaa"
+                                    >Background Stat</label
+                                >
+                                <select
+                                    id="wizStatChoice"
+                                    onchange="
+                                        resetBoost();
+                                        updateWizStats();
+                                    "
+                                ></select>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; color: #aaa"
+                                    >Boost Stat (+1/-1)</label
+                                >
+                                <select
+                                    id="wizBoostChoice"
+                                    onchange="updateWizStats()"
+                                >
+                                    <option value="none">None</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="wiz-stat-grid">
+                            <div class="wiz-stat-box">
+                                <h3>Agility</h3>
+                                <span
+                                    id="wAgl"
+                                    class="fell-font"
+                                    style="font-size: 1.8rem"
+                                    >0</span
+                                >
+                            </div>
+                            <div class="wiz-stat-box">
+                                <h3>Mind</h3>
+                                <span
+                                    id="wMnd"
+                                    class="fell-font"
+                                    style="font-size: 1.8rem"
+                                    >0</span
+                                >
+                            </div>
+                            <div class="wiz-stat-box">
+                                <h3>Strength</h3>
+                                <span
+                                    id="wStr"
+                                    class="fell-font"
+                                    style="font-size: 1.8rem"
+                                    >0</span
+                                >
+                            </div>
+                        </div>
+                        <hr
+                            id="wizSep1"
+                            style="
+                                border-color: #444;
+                                margin: 15px 0;
+                                display: none;
+                            "
+                        />
+                        <div id="wizChoiceContainer"></div>
+                        <hr
+                            id="wizSep2"
+                            style="
+                                border-color: #444;
+                                margin: 15px 0;
+                                display: none;
+                            "
+                        />
+                    </div>
+                    <div id="wizStep3" class="wizard-step">
+                        <label>Character Name</label>
+                        <input
+                            type="text"
+                            id="wizName"
+                            placeholder="E.g., Silas the Grim"
+                            style="margin-bottom: 10px"
+                        />
+                        <span
+                            id="wizNameWarn"
+                            style="
+                                color: #ff5555;
+                                font-size: 0.8rem;
+                                display: none;
+                            "
+                            >Character exists. Will overwrite!</span
+                        >
+                        <label style="margin-top: 10px; display: block"
+                            >Feature / Quirk (tattoo, voice, unique
+                            odor...)</label
+                        >
+                        <input
+                            type="text"
+                            id="wizFeature"
+                            placeholder="E.g., Smells of sulfur, missing an eye"
+                        />
+                    </div>
+                </div>
+                <div class="wizard-footer">
+                    <button
+                        class="btn-action"
+                        style="width: 80px"
+                        onclick="wizNav(-1)"
+                        id="wizBtnPrev"
+                    >
+                        Cancel
+                    </button>
+                    <span
+                        id="wizStepLabel"
+                        style="
+                            font-family: &quot;IM Fell English SC&quot;, serif;
+                            color: var(--crows-red);
+                        "
+                        >Step 1/3</span
+                    >
+                    <button
+                        class="btn-action"
+                        style="width: 80px"
+                        onclick="wizNav(1)"
+                        id="wizBtnNext"
+                    >
+                        Next
                     </button>
                 </div>
             </div>
@@ -1134,11 +1372,713 @@
                 ],
             };
 
+            const bgData = [
+                {
+                    d: "1,1",
+                    n: "Acolyte of the Gardner",
+                    s: "Mind",
+                    st: 5,
+                    t: "When you cast an enchantment spell with a duration listed in UD, add an additional 1 UD to the duration.",
+                    sk: [
+                        "Handle Animal",
+                        "Nature Lore",
+                        "Navigate",
+                        "Religious Lore",
+                        "Swim",
+                        "Benefaction",
+                        "Elemental",
+                    ],
+                    eq: [
+                        "Holy symbol",
+                        "Torch",
+                        "Spellbook of Fire Hands (1/1)",
+                        "Spellbook of Minor Healing (1/1)",
+                        "Spellbook of Spark (1/1)",
+                    ],
+                },
+                {
+                    d: "1,2",
+                    n: "Acolyte of the Healer",
+                    s: "Mind",
+                    st: 7,
+                    t: "When you cast a benefaction spell that restores Stamina to a target, the target regains additional Stamina equal to your Mind.",
+                    sk: [
+                        "Alchemy",
+                        "Lift",
+                        "Religious Lore",
+                        "Benefaction",
+                        "Bashing",
+                    ],
+                    eq: [
+                        "Holy symbol",
+                        "Lantern",
+                        "Mace",
+                        "Oil flask",
+                        "Spellbook of Minor Blessing (1/1)",
+                        "Spellbook of Minor Healing (1/1)",
+                    ],
+                },
+                {
+                    d: "1,3",
+                    n: "Acolyte of the Smith",
+                    s: "Mind",
+                    st: 7,
+                    t: "You don't need tools to make crafting rolls for alchemy, blacksmithing, or enchanting items.",
+                    sk: [
+                        "Alchemy",
+                        "Blacksmithing",
+                        "Enchanting",
+                        "Religious Lore",
+                        "Benefaction",
+                    ],
+                    eq: [
+                        "Holy symbol",
+                        "Magnifying glass",
+                        "Torch",
+                        "Spellbook of Minor Healing (1/1)",
+                        "Spellbook of Summon Object (1/1)",
+                    ],
+                },
+                {
+                    d: "1,4",
+                    n: "Acolyte of the Three",
+                    s: "Mind|Strength",
+                    st: 7,
+                    t: "When you cast a necromancy spell that kills a creature, you gain AD equal to your Mind. This AD disappears when you finish a rest.",
+                    sk: [
+                        "Magic Lore",
+                        "Monster Lore",
+                        "Religious Lore",
+                        "Necromancy",
+                        "Chopping",
+                    ],
+                    eq: [
+                        "Axe",
+                        "Torch",
+                        "Spellbook of Bone Capture (1/1)",
+                        "Spellbook of Minor Curse (1/1)",
+                        "Spellbook of Monster Sense (1/1)",
+                    ],
+                },
+                {
+                    d: "1,5",
+                    n: "Acolyte of the Warrior",
+                    s: "Mind|Strength",
+                    st: 9,
+                    t: "When you have a benefaction spell that can restore Stamina to a creature equipped and a creature within the spell's range take damage, you can use your reaction to cast the spell, targeting that creature.",
+                    sk: ["Religious Lore", "Benefaction", "Chopping"],
+                    eq: [
+                        "Axe",
+                        "Holy symbol",
+                        "Torch",
+                        "Spellbook of Minor Healing (1/1)",
+                        "Spellbook of Minor Ward (1/1)",
+                    ],
+                },
+                {
+                    d: "1,6",
+                    n: "Alchemist",
+                    s: "Mind",
+                    st: 5,
+                    t: "When you work on crafting an alchemy item as part of the Craft Equipment rest activity, you can make two crafting rolls for the item or make a second crafting roll for a different alchemy item.",
+                    sk: [
+                        "Alchemy",
+                        "Enchanting",
+                        "Magic Lore",
+                        "Monster Lore",
+                        "Sabotage",
+                        "Search",
+                        "Bow",
+                    ],
+                    eq: [
+                        "Acid vial",
+                        "Alchemist's tools",
+                        "Bucket",
+                        "Healing potion",
+                        "Lantern",
+                        "Oil flask",
+                    ],
+                },
+                {
+                    d: "2,1",
+                    n: "Apprentice Mage",
+                    s: "Mind",
+                    st: 5,
+                    t: "As a rest activity, you can create an alteration stone (which has an equipment card). This stone disappears if you create a new one.",
+                    sk: [
+                        "Enchanting",
+                        "Magic Lore",
+                        "Monster Lore",
+                        "Alteration",
+                        "Conjuration",
+                        "Elemental",
+                        "Illusion",
+                    ],
+                    eq: [
+                        "Spellbook of Acid Spit (1/1)",
+                        "Spellbook of Jaunt (1/1)",
+                        "Spellbook of Light (1/1)",
+                        "Spellbook of Take Shape (1/1)",
+                        "Spellbook of Thunder (1/1)",
+                    ],
+                },
+                {
+                    d: "2,2",
+                    n: "Archer",
+                    s: "Agility",
+                    st: 7,
+                    t: "When you make a ranged attack with a bow, you don't suffer the -1 penalty for having an enemy within 1 square of you.",
+                    sk: ["Climb", "Hide", "Sneak", "Bow", "Unarmed"],
+                    eq: [
+                        "Arrow quiver (20/20)",
+                        "Shortbow",
+                        "Spyglass",
+                        "Torch",
+                        "Whistle",
+                    ],
+                },
+                {
+                    d: "2,3",
+                    n: "Assassin",
+                    s: "Agility",
+                    st: 5,
+                    t: "When you hit with a weapon attack using Agility that has bonuses outside of skills and characteristics, you deal additional damage equal to twice those bonuses.",
+                    sk: [
+                        "Climb",
+                        "Gymnastics",
+                        "Hide",
+                        "Pick Lock",
+                        "Sneak",
+                        "Bow",
+                        "Slashing",
+                    ],
+                    eq: [
+                        "Extra knife",
+                        "Poison vial",
+                        "Arrow quiver (20/20)",
+                        "Shortbow",
+                        "Torch",
+                    ],
+                },
+                {
+                    d: "2,4",
+                    n: "Beggar",
+                    s: "Any",
+                    st: 7,
+                    t: "When you roll a UD for a piece of mundane equipment that has only 1 die remaining at the start of rolling the item's dice, then you can only lose the UD on a result of 1.",
+                    sk: ["Endurance", "Hide", "Lift", "Search", "Sneak"],
+                    eq: ["Lock", "Pot", "String", "Tent", "Torch"],
+                },
+                {
+                    d: "2,5",
+                    n: "Blacksmith",
+                    s: "Strength",
+                    st: 7,
+                    t: "When you work on crafting a blacksmithing item as part of the Craft Equipment rest activity, you can make two crafting rolls for the item or make a second crafting roll for a different blacksmithing item.",
+                    sk: [
+                        "Blacksmithing",
+                        "Endurance",
+                        "Lift",
+                        "Sabotage",
+                        "Bashing",
+                    ],
+                    eq: ["Bell", "Chain", "Maul", "Smith's tools", "Torch"],
+                },
+                {
+                    d: "2,6",
+                    n: "Bodyguard",
+                    s: "Strength",
+                    st: 9,
+                    t: "When you wield a shield with at least 1 AD and a creature makes a weapon attack against a creature adjacent to you, you can use your reaction to cause the damage to apply your shield before the target.",
+                    sk: ["Endurance", "Hide", "Slashing"],
+                    eq: [
+                        "Ball bearings",
+                        "Light armor",
+                        "Shield",
+                        "Sword",
+                        "Torch",
+                    ],
+                },
+                {
+                    d: "3,1",
+                    n: "Cartographer",
+                    s: "Mind",
+                    st: 7,
+                    t: "When you make a test related to the guide travel role and carry a compass, you can roll the test twice and choose either result.",
+                    sk: [
+                        "Historical Lore",
+                        "Monster Lore",
+                        "Nature Lore",
+                        "Navigate",
+                        "Search",
+                    ],
+                    eq: [
+                        "Compass",
+                        "Journal",
+                        "Lantern",
+                        "Lore book (historical)",
+                        "Oil flask",
+                        "Quill and inkpot",
+                    ],
+                },
+                {
+                    d: "3,2",
+                    n: "Conjurer",
+                    s: "Mind",
+                    st: 7,
+                    t: "When you cast a conjuration spell that teleports a target, you can teleport the target an additional number of squares equal to your Mind. This trait stacks with Long Distance Jump.",
+                    sk: [
+                        "Handle Animal",
+                        "Magic Lore",
+                        "Monster Lore",
+                        "Navigate",
+                        "Conjuration",
+                    ],
+                    eq: [
+                        "Chain",
+                        "Torch",
+                        "Spellbook of Jaunt (1/1)",
+                        "Spellbook of Summon Object (1/1)",
+                        "Spellbook of Teleport Object (1/1)",
+                    ],
+                },
+                {
+                    d: "3,3",
+                    n: "Cook",
+                    s: "Any",
+                    st: 7,
+                    t: "As a rest activity, you can turn a normal ration into something more if you have cook's utensils. The ration becomes a hearty ration (which has an equipment card).",
+                    sk: [
+                        "Alchemy",
+                        "Endurance",
+                        "Lift",
+                        "Nature Lore",
+                        "Slashing",
+                    ],
+                    eq: [
+                        "Cook's utensils",
+                        "Hearty ration (2)",
+                        "Pot",
+                        "Torch",
+                    ],
+                },
+                {
+                    d: "3,4",
+                    n: "Duelist",
+                    s: "Agility",
+                    st: 9,
+                    t: "You can use Agility instead of Strength when making an attack and dealing damage with a sword.",
+                    sk: ["Gymnastics", "Historical Lore", "Slashing"],
+                    eq: [
+                        "Light armor",
+                        "Lore book (historical)",
+                        "Mirror",
+                        "Sword",
+                        "Torch",
+                    ],
+                },
+                {
+                    d: "3,5",
+                    n: "Entertainer",
+                    s: "Agility",
+                    st: 5,
+                    t: "As a rest activity, you can play a song on an instrument. At the end of the rest, each ally who rested with you is blessed.",
+                    sk: [
+                        "Climb",
+                        "Endurance",
+                        "Gymnastics",
+                        "Handle Animal",
+                        "Historical Lore",
+                        "Jump",
+                        "Sleight of Hand",
+                    ],
+                    eq: [
+                        "10-foot pole",
+                        "Chalk",
+                        "Mirror",
+                        "Musical instrument (lute)",
+                        "Torch",
+                    ],
+                },
+                {
+                    d: "3,6",
+                    n: "Executioner",
+                    s: "Strength",
+                    st: 9,
+                    t: "When you roll on the Dismember table after scoring a crit with a chopping weapon, roll twice and choose the result.",
+                    sk: ["Lift", "Chopping", "Unarmed"],
+                    eq: ["Chain", "Greataxe", "Ladder", "Lock", "Torch"],
+                },
+                {
+                    d: "4,1",
+                    n: "Farmer",
+                    s: "Strength",
+                    st: 7,
+                    t: "As a rest activity, choose a number of pets you own equal to your Mind (minimum 1). You gain a +2 bonus on Mind tests made to interact with those pets until you use the activity again.",
+                    sk: [
+                        "Blacksmithing",
+                        "Endurance",
+                        "Handle Animal",
+                        "Lift",
+                        "Nature Lore",
+                    ],
+                    eq: [
+                        "10-foot pole",
+                        "Animal feed (6)",
+                        "Goat (pet)",
+                        "Pot",
+                        "Torch",
+                    ],
+                },
+                {
+                    d: "4,2",
+                    n: "Gladiator",
+                    s: "Strength",
+                    st: 9,
+                    t: "When you hit a creature with a melee stabbing weapon attack, you can deal twice as much damage as you normally would, but the weapon becomes useless until you use a rest activity to fix it.",
+                    sk: ["Jump", "Lift", "Stabbing"],
+                    eq: [
+                        "Light armor",
+                        "Mirror",
+                        "Pike",
+                        "Rage potion",
+                        "Torch",
+                    ],
+                },
+                {
+                    d: "4,3",
+                    n: "Hunter",
+                    s: "Agility",
+                    st: 5,
+                    t: "When you make a test related to the forager travel roll and gain at least 1 ration, you gain 1 additional ration. This trait stacks with Food Finder.",
+                    sk: [
+                        "Handle Animal",
+                        "Hide",
+                        "Nature Lore",
+                        "Navigate",
+                        "Sneak",
+                        "Swim",
+                        "Bow",
+                    ],
+                    eq: [
+                        "Animal feed (6)",
+                        "Dog (pet)",
+                        "Arrow quiver (20/20)",
+                        "Shortbow",
+                        "Torch",
+                    ],
+                },
+                {
+                    d: "4,4",
+                    n: "Hydromancer",
+                    s: "Mind",
+                    st: 7,
+                    t: "When you cast an elemental spell, you can harness the magic to surround your body in a water ward and gain AD equal to your Mind. The AD granted by this trait disappears at the end of a rest.",
+                    sk: [
+                        "Alchemy",
+                        "Enchanting",
+                        "Magic Lore",
+                        "Swim",
+                        "Elemental",
+                    ],
+                    eq: [
+                        "Journal",
+                        "Quill and inkpot",
+                        "Torch",
+                        "Spellbook of Create Water (1/1)",
+                        "Spellbook of Stream (1/1)",
+                    ],
+                },
+                {
+                    d: "4,5",
+                    n: "Illusionist",
+                    s: "Mind",
+                    st: 5,
+                    t: "When you cast an illusion spell with a duration listed in UD, add an additional 1 UD to the duration.",
+                    sk: [
+                        "Hide",
+                        "Magic Lore",
+                        "Monster Lore",
+                        "Pick Lock",
+                        "Search",
+                        "Sneak",
+                        "Illusion",
+                    ],
+                    eq: [
+                        "Card deck",
+                        "Whistle",
+                        "Spellbook of Cacophony (1/1)",
+                        "Spellbook of Light (1/1)",
+                        "Spellbook of Minor Phantasm (1/1)",
+                    ],
+                },
+                {
+                    d: "4,6",
+                    n: "Keraunomancer",
+                    s: "Mind",
+                    st: 7,
+                    t: "When you cast a ranged elemental spell, the spell's range increases a number of squares equal to your Mind.",
+                    sk: [
+                        "Blacksmithing",
+                        "Enchanting",
+                        "Magic Lore",
+                        "Elemental",
+                        "Bashing",
+                    ],
+                    eq: [
+                        "Mace",
+                        "Mirror",
+                        "Torch",
+                        "Spellbook of Spark (1/1)",
+                        "Spellbook of Thunder (1/1)",
+                    ],
+                },
+                {
+                    d: "5,1",
+                    n: "Knight",
+                    s: "Strength",
+                    st: 9,
+                    t: "You can add your Strength to the Parry quality of any slashing weapon you wield.",
+                    sk: ["Handle Animal", "Historical Lore", "Slashing"],
+                    eq: [
+                        "Animal feed (6)",
+                        "Greatsword",
+                        "Horse (pet)",
+                        "Lantern",
+                        "Light armor",
+                        "Oil flask",
+                    ],
+                },
+                {
+                    d: "5,2",
+                    n: "Merchant",
+                    s: "Mind",
+                    st: 7,
+                    t: "As a rest activity, choose up to three pieces of equipment you can touch. The first time you or an ally uses this equipment as part of a test before the end of your next rest, they gain a +2 bonus on the roll.",
+                    sk: [
+                        "Historical Lore",
+                        "Lift",
+                        "Navigate",
+                        "Search",
+                        "Sleight of Hand",
+                    ],
+                    eq: [
+                        "Journal",
+                        "Lantern",
+                        "Merchant's scales",
+                        "Oil flask",
+                        "Quill and inkpot",
+                        "50 gc",
+                    ],
+                },
+                {
+                    d: "5,3",
+                    n: "Miner",
+                    s: "Strength",
+                    st: 7,
+                    t: "When you carry a mundane light source, its UD maximum increases by 1.",
+                    sk: ["Climb", "Endurance", "Lift", "Navigate", "Stabbing"],
+                    eq: [
+                        "Chalk",
+                        "Grappling hook",
+                        "Lantern",
+                        "Oil flask",
+                        "Pickaxe",
+                        "Shovel",
+                    ],
+                },
+                {
+                    d: "5,4",
+                    n: "Noble",
+                    s: "Agility|Mind",
+                    st: 7,
+                    t: "Choose a merchant in your village. When you need to roll for an item's availability from that merchant, the AO increases by 5%. You can change your choice of merchant once every cycle.",
+                    sk: [
+                        "Handle Animal",
+                        "Historical Lore",
+                        "Religious Lore",
+                        "Sneak",
+                        "Bow",
+                    ],
+                    eq: [
+                        "Animal feed (6)",
+                        "Horse (pet)",
+                        "Lantern",
+                        "Lore book (historical)",
+                        "Oil flask",
+                        "50 gc",
+                    ],
+                },
+                {
+                    d: "5,5",
+                    n: "Pugilist",
+                    s: "Agility|Strength",
+                    st: 9,
+                    t: "When you get a tier 3 result with an unarmed or improvised weapon attack, the attack deals additional damage equal to your Agility or Strength.",
+                    sk: ["Climb", "Jump", "Unarmed"],
+                    eq: [
+                        "Chalk",
+                        "Light armor",
+                        "Lore book (monsters)",
+                        "Rage potion",
+                        "Torch",
+                    ],
+                },
+                {
+                    d: "5,6",
+                    n: "Pyromancer",
+                    s: "Mind",
+                    st: 5,
+                    t: "When you cast an elemental spell that deals damage to a target, the target takes additional damage equal to your Mind.",
+                    sk: [
+                        "Alchemy",
+                        "Enchanting",
+                        "Magic Lore",
+                        "Swim",
+                        "Elemental",
+                    ],
+                    eq: [
+                        "Magnifying glass",
+                        "String",
+                        "Torch",
+                        "Spellbook of Fire Hands (1/1)",
+                        "Spellbook of Fire Lance (1/1)",
+                    ],
+                },
+                {
+                    d: "6,1",
+                    n: "Sage",
+                    s: "Mind",
+                    st: 5,
+                    t: "When you read a lore book as a rest activity, you can read a second lore book as part of the same activity.",
+                    sk: [
+                        "Historical Lore",
+                        "Magic Lore",
+                        "Monster Lore",
+                        "Nature Lore",
+                        "Navigate",
+                        "Religious Lore",
+                        "Sabotage",
+                    ],
+                    eq: [
+                        "Journal",
+                        "Lore book (monsters)",
+                        "Lore book (nature)",
+                        "Quill and inkpot",
+                        "Torch",
+                    ],
+                },
+                {
+                    d: "6,2",
+                    n: "Soldier",
+                    s: "Strength",
+                    st: 9,
+                    t: "While wearing armor, the distance you can be force moved is reduced by 1, and you can't be knocked prone by tier 1 and 2 attack results or by tier 2 and 3 RR results.",
+                    sk: ["Endurance", "Bow", "Stabbing"],
+                    eq: [
+                        "Light armor",
+                        "Arrow quiver (20/20)",
+                        "Shortbow",
+                        "Spear",
+                        "Torch",
+                    ],
+                },
+                {
+                    d: "6,3",
+                    n: "Thief",
+                    s: "Agility",
+                    st: 5,
+                    t: "When make a test to hide or sneak while you are not wearing armor, you can roll the test twice and choose either result.",
+                    sk: [
+                        "Gymnastics",
+                        "Hide",
+                        "Pick Lock",
+                        "Sabotage",
+                        "Search",
+                        "Sleight of Hand",
+                        "Sneak",
+                    ],
+                    eq: [
+                        "Crowbar",
+                        "Grappling hook",
+                        "Knife (extra)",
+                        "Lockpick set",
+                        "Torch",
+                    ],
+                },
+                {
+                    d: "6,4",
+                    n: "Tinkerer",
+                    s: "Mind",
+                    st: 5,
+                    t: "You can sketch a room with a journal, quill, and inkpot. As a rest activity, you can study the sketch. You gain a +2 bonus on tests made to interact with the room. It lasts until you finish a rest.",
+                    sk: [
+                        "Alchemy",
+                        "Blacksmithing",
+                        "Enchanting",
+                        "Pick Lock",
+                        "Sabotage",
+                        "Search",
+                        "Chopping",
+                    ],
+                    eq: [
+                        "Alchemist's tools",
+                        "Blacksmith's tools",
+                        "Handaxe",
+                        "Lockpick set",
+                        "Torch",
+                    ],
+                },
+                {
+                    d: "6,5",
+                    n: "Transmuter",
+                    s: "Mind",
+                    st: 5,
+                    t: "When you cast an alteration spell, you can harness the magic to grow temporary scales on your body and gain AD equal to your Mind. The AD granted by this trait disappears at the end of a rest.",
+                    sk: [
+                        "Alchemy",
+                        "Blacksmithing",
+                        "Enchanting",
+                        "Magic Lore",
+                        "Pick Lock",
+                        "Sabotage",
+                        "Alteration",
+                    ],
+                    eq: [
+                        "Chalk",
+                        "Torch",
+                        "Spellbook of Jaunt (1/1)",
+                        "Spellbook of Animal Form (1/1)",
+                        "Spellbook of Repair (1/1)",
+                        "Spellbook of Take Shape (1/1)",
+                    ],
+                },
+                {
+                    d: "6,6",
+                    n: "Village Watch",
+                    s: "Strength",
+                    st: 9,
+                    t: "While you wear armor, you gain a +1 bonus on Strength RRs.",
+                    sk: ["Jump", "Search", "Stabbing"],
+                    eq: [
+                        "Chain",
+                        "Lantern",
+                        "Light armor",
+                        "Oil flask",
+                        "Pike",
+                        "Whistle",
+                    ],
+                },
+            ];
+
             let roster = {};
             let currentCharName = "";
             let currentOpenModal = null;
             let currentTextFieldTarget = "";
             let useRomanNumerals = true;
+            let wizStep = 1;
+            let wizSelBg = null;
+            let wizWarned = false;
 
             function getBlankChar(name) {
                 return {
@@ -1175,20 +2115,58 @@
                 };
             }
 
-            let char = getBlankChar(currentCharName);
+            let char = getBlankChar("");
 
             function formatNumber(num) {
                 if (!useRomanNumerals) return num;
                 if (num == 0) return "O";
-                if (isNaN(num) || num <= 0 || num > 3999) return num;
-                var M = ["", "M", "MM", "MMM"];
-                var C = ["", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM"];
-                var X = ["", "X", "XX", "XXX", "XL", "L", "LX", "LXX", "LXXX", "XC"];
-                var I = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"];
-                return M[Math.floor(num / 1000)] +
-                       C[Math.floor((num % 1000) / 100)] +
-                       X[Math.floor((num % 100) / 10)] +
-                       I[num % 10];
+                let prefix = num < 0 ? "-" : "";
+                let n = Math.abs(num);
+                if (n > 3999) return num;
+                var M = ["", "M", "MM", "MMM"],
+                    C = [
+                        "",
+                        "C",
+                        "CC",
+                        "CCC",
+                        "CD",
+                        "D",
+                        "DC",
+                        "DCC",
+                        "DCCC",
+                        "CM",
+                    ],
+                    X = [
+                        "",
+                        "X",
+                        "XX",
+                        "XXX",
+                        "XL",
+                        "L",
+                        "LX",
+                        "LXX",
+                        "LXXX",
+                        "XC",
+                    ],
+                    I = [
+                        "",
+                        "I",
+                        "II",
+                        "III",
+                        "IV",
+                        "V",
+                        "VI",
+                        "VII",
+                        "VIII",
+                        "IX",
+                    ];
+                return (
+                    prefix +
+                    M[Math.floor(n / 1000)] +
+                    C[Math.floor((n % 1000) / 100)] +
+                    X[Math.floor((n % 100) / 10)] +
+                    I[n % 10]
+                );
             }
 
             function toggleRomanNumerals() {
@@ -1199,54 +2177,43 @@
 
             function triggerRest() {
                 if (!currentCharName) return;
-
-                const message = "Please do the following manually:\n\n" +
-                                "Remove one ration from an inventory\n" +
-                                "Repair up to one item\n" +
-                                "Reset any magic item usage dice\n\n" +
-                                "Do you wish to complete the rest?";
-
-                if (confirm(message)) {
-                    // Reset stamina to max
+                if (
+                    confirm(
+                        "Remove 1 ration, repair 1 item, reset magic UD. Finish rest?",
+                    )
+                ) {
                     char.stamina = parseInt(char.maxStamina) || 5;
-
-                    // Remove the first wound found in the backpack arrays
                     if (char.backpackWounds) {
-                        const firstWoundIdx = char.backpackWounds.indexOf(true);
-                        if (firstWoundIdx !== -1) {
-                            char.backpackWounds[firstWoundIdx] = false;
-                        }
+                        const idx = char.backpackWounds.indexOf(true);
+                        if (idx !== -1) char.backpackWounds[idx] = false;
                     }
-
                     saveData();
                     updateAllUI();
                 }
             }
 
             function init() {
-                const storedRomanSetting = localStorage.getItem("crows_use_roman");
-                if (storedRomanSetting !== null) {
-                    useRomanNumerals = storedRomanSetting === "true";
-                } else {
-                    useRomanNumerals = true;
-                }
-
+                useRomanNumerals =
+                    localStorage.getItem("crows_use_roman") !== "false";
                 renderSkills();
                 loadData();
-                document.addEventListener("click", function (e) {
-                    if (!e.target.closest(".custom-dropdown")) {
+                setInterval(checkDropdownHighlight, 2000);
+                document.addEventListener("click", (e) => {
+                    if (!e.target.closest(".custom-dropdown"))
                         document
                             .getElementById("rosterList")
                             .classList.remove("open");
-                    }
                 });
-                document.addEventListener("keydown", function (e) {
+                document.addEventListener("keydown", (e) => {
                     if (e.key === "Escape" || e.key === "Esc") {
-                        if (currentOpenModal === "json") {
-                            closeJsonModal();
-                        } else if (currentOpenModal === "text") {
-                            saveTextModal();
-                        }
+                        if (
+                            document
+                                .getElementById("wizardModal")
+                                .classList.contains("open")
+                        )
+                            closeWizard();
+                        else if (currentOpenModal === "json") closeJsonModal();
+                        else if (currentOpenModal === "text") saveTextModal();
                     }
                 });
             }
@@ -1260,13 +2227,11 @@
             function renderDropdownList() {
                 const list = document.getElementById("rosterList");
                 list.innerHTML = "";
-
-                let newCharLi = document.createElement("li");
-                newCharLi.innerText = "+ New Character...";
-                newCharLi.className = "new-char-opt";
-                newCharLi.onclick = () => newCharacter();
-                list.appendChild(newCharLi);
-
+                let genBtn = document.createElement("li");
+                genBtn.innerText = "Generate Character";
+                genBtn.className = "new-char-opt";
+                genBtn.onclick = () => openWizard();
+                list.appendChild(genBtn);
                 for (let name in roster) {
                     if (!name) continue;
                     let li = document.createElement("li");
@@ -1274,18 +2239,37 @@
                     li.onclick = () => switchCharacter(name);
                     list.appendChild(li);
                 }
+                checkDropdownHighlight();
+            }
+
+            function checkDropdownHighlight() {
+                const btn = document.getElementById("dropdownToggleBtn");
+                if (!btn) return;
+                btn.classList.remove("btn-red-mid");
+                let empty =
+                    char &&
+                    char.stats.agility === 0 &&
+                    char.stats.mind === 0 &&
+                    char.stats.strength === 0 &&
+                    (!char.skills ||
+                        Object.values(char.skills).reduce(
+                            (a, b) => a + b,
+                            0,
+                        ) === 0) &&
+                    !char.traits;
+                const names = Object.keys(roster).filter((n) => n !== "");
+                if (names.length === 0 || empty)
+                    btn.classList.add("btn-red-mid");
             }
 
             function updateName(newName) {
                 newName = newName.trim();
                 if (!newName) return;
-
                 if (newName !== currentCharName) {
                     char.name = newName;
                     roster[newName] = char;
-                    if (currentCharName && roster[currentCharName]) {
+                    if (currentCharName && roster[currentCharName])
                         delete roster[currentCharName];
-                    }
                     currentCharName = newName;
                     saveData();
                     renderDropdownList();
@@ -1304,106 +2288,63 @@
                 }
             }
 
-            function newCharacter() {
-                document.getElementById("rosterList").classList.remove("open");
-                let name = prompt("Enter new character name:");
-                if (name) {
-                    name = name.trim();
-                    if (roster[name]) {
-                        alert("Character already exists!");
-                        return;
-                    }
-                    char = getBlankChar(name);
-                    currentCharName = name;
-                    roster[name] = char;
-
-                    localStorage.setItem(
-                        "crows_roster",
-                        JSON.stringify(roster),
-                    );
-                    localStorage.setItem("crows_last_active", currentCharName);
-                    updateAllUI();
-                    renderDropdownList();
-                }
-            }
-
             function deleteCharacter() {
-                if (!currentCharName) return;
-                if (confirm(`Delete ${char.name}?`)) {
-                    delete roster[currentCharName];
-                    const remaining = Object.keys(roster).filter(
-                        (n) => n !== "",
-                    );
-
-                    if (remaining.length > 0) {
-                        char = roster[remaining[0]];
-                        currentCharName = remaining[0];
-                    } else {
-                        char = getBlankChar("");
-                        currentCharName = "";
-                    }
-
-                    localStorage.setItem(
-                        "crows_roster",
-                        JSON.stringify(roster),
-                    );
-                    localStorage.setItem("crows_last_active", currentCharName);
-
-                    updateAllUI();
-                    renderDropdownList();
+                if (!currentCharName || !confirm(`Delete ${char.name}?`))
+                    return;
+                delete roster[currentCharName];
+                const rem = Object.keys(roster).filter((n) => n !== "");
+                if (rem.length > 0) {
+                    char = roster[rem[0]];
+                    currentCharName = rem[0];
+                } else {
+                    char = getBlankChar("");
+                    currentCharName = "";
                 }
+                saveData();
+                updateAllUI();
+                renderDropdownList();
             }
 
             function sync(key, val) {
                 char[key] = val;
                 saveData();
             }
-            function syncNested(category, key, val) {
-                char[category][key] = val;
+            function syncNested(cat, key, val) {
+                char[cat][key] = val;
                 saveData();
             }
-            function updateBackpackItem(index, value) {
-                char.backpack[index] = value;
+            function updateBackpackItem(idx, val) {
+                char.backpack[idx] = val;
                 saveData();
             }
-
-            function toggleWound(index) {
+            function toggleWound(idx) {
                 if (!char.backpackWounds)
                     char.backpackWounds = Array(10).fill(false);
-                char.backpackWounds[index] = !char.backpackWounds[index];
+                char.backpackWounds[idx] = !char.backpackWounds[idx];
                 renderBackpack();
                 saveData();
             }
-
             function modVal(key, delta, min = -9999, max = 9999) {
-                let current = parseInt(char[key]) || 0;
-                let newVal = current + delta;
-                if (newVal >= min && newVal <= max) {
-                    char[key] = newVal;
-                    let el = document.getElementById(`val-${key}`);
-                    if (el) el.innerText = formatNumber(newVal);
+                let v = (parseInt(char[key]) || 0) + delta;
+                if (v >= min && v <= max) {
+                    char[key] = v;
+                    updateAllUI();
                     saveData();
                 }
             }
-
-            function modStat(stat, delta) {
-                let current = parseInt(char.stats[stat]) || 0;
-                let newVal = current + delta;
-                if (newVal >= -5 && newVal <= 5) {
-                    char.stats[stat] = newVal;
-                    document.getElementById(`val-${stat}`).innerText = formatNumber(newVal);
+            function modStat(s, delta) {
+                let v = (parseInt(char.stats[s]) || 0) + delta;
+                if (v >= -1 && v <= 3) {
+                    char.stats[s] = v;
+                    updateAllUI();
                     saveData();
                 }
             }
-
-            function modSkill(skillName, delta) {
-                let current = parseInt(char.skills[skillName]) || 0;
-                let newVal = current + delta;
-                if (newVal >= 0 && newVal <= 2) {
-                    char.skills[skillName] = newVal;
-                    document.getElementById(
-                        `skill_${skillName.replace(/\s+/g, "")}`,
-                    ).innerText = formatNumber(newVal);
+            function modSkill(s, delta) {
+                let v = (parseInt(char.skills[s]) || 0) + delta;
+                if (v >= 0 && v <= 2) {
+                    char.skills[s] = v;
+                    updateAllUI();
                     saveData();
                 }
             }
@@ -1411,19 +2352,11 @@
             function renderSkills() {
                 const container = document.getElementById("skills-container");
                 let html = "";
-                for (const [category, skills] of Object.entries(SKILL_LIST)) {
-                    html += `<div class="skill-group-title">${category}</div>`;
-                    skills.forEach((skill) => {
-                        let safeId = skill.replace(/\s+/g, "");
-                        html += `
-                            <div class="skill-row">
-                                <span>${skill}</span>
-                                <div class="num-ctrl-horiz">
-                                    <button class="btn-circle" onclick="modSkill('${skill}', -1)">-</button>
-                                    <span class="val fell-font" style="font-size:1.4rem" id="skill_${safeId}">0</span>
-                                    <button class="btn-circle" onclick="modSkill('${skill}', 1)">+</button>
-                                </div>
-                            </div>`;
+                for (const [cat, skills] of Object.entries(SKILL_LIST)) {
+                    html += `<div class="skill-group-title">${cat}</div>`;
+                    skills.forEach((s) => {
+                        let id = s.replace(/\s+/g, "");
+                        html += `<div class="skill-row"><span>${s}</span><div class="num-ctrl-horiz"><button class="btn-circle" onclick="modSkill('${s}', -1)">-</button><span class="val fell-font" style="font-size:1.4rem" id="skill_${id}">0</span><button class="btn-circle" onclick="modSkill('${s}', 1)">+</button></div></div>`;
                     });
                 }
                 container.innerHTML = html;
@@ -1432,18 +2365,9 @@
             function renderBackpack() {
                 const container = document.getElementById("backpack-container");
                 let html = `<h2>Backpack <span style="font-size: 0.8rem; color: #888; text-transform:none; font-family:'Inter', sans-serif; font-weight:normal;">(Wounds)</span></h2>`;
-
                 for (let i = 0; i < 10; i++) {
-                    let slotNum = i + 1;
-                    let val = char.backpack[i] || "";
-                    let isWounded =
-                        char.backpackWounds && char.backpackWounds[i];
-
-                    html += `<div class="slot-row">
-                                <span class="slot-label" style="width:20px;">${slotNum}.</span>
-                                <input type="text" id="bp_item_${i}" class="${isWounded ? "wound-slot" : ""}" value="${val}" oninput="updateBackpackItem(${i}, this.value)" ${isWounded ? "disabled" : ""}>
-                                <input type="checkbox" class="wound-cb" ${isWounded ? "checked" : ""} onchange="toggleWound(${i})" title="Mark Wound">
-                            </div>`;
+                    let wounded = char.backpackWounds && char.backpackWounds[i];
+                    html += `<div class="slot-row"><span class="slot-label" style="width:20px;">${i + 1}.</span><input type="text" id="bp_item_${i}" class="${wounded ? "wound-slot" : ""}" value="${char.backpack[i] || ""}" oninput="updateBackpackItem(${i}, this.value)" ${wounded ? "disabled" : ""}><input type="checkbox" class="wound-cb" ${wounded ? "checked" : ""} onchange="toggleWound(${i})"></div>`;
                 }
                 container.innerHTML = html;
             }
@@ -1457,60 +2381,23 @@
                 );
                 document.getElementById("jsonModal").classList.add("open");
             }
-
             function closeJsonModal() {
                 currentOpenModal = null;
                 document.getElementById("jsonModal").classList.remove("open");
             }
-
             function saveJsonModal() {
                 try {
-                    const parsed = JSON.parse(
+                    roster = JSON.parse(
                         document.getElementById("jsonTextArea").value,
                     );
-                    if (typeof parsed !== "object" || parsed === null)
-                        throw new Error();
-
-                    roster = parsed;
                     localStorage.setItem(
                         "crows_roster",
                         JSON.stringify(roster),
                     );
-
-                    const remaining = Object.keys(roster).filter(
-                        (n) => n !== "",
-                    );
-                    if (remaining.length > 0) {
-                        if (
-                            localStorage.getItem("crows_last_active") &&
-                            roster[localStorage.getItem("crows_last_active")]
-                        ) {
-                            char =
-                                roster[
-                                    localStorage.getItem("crows_last_active")
-                                ];
-                            currentCharName =
-                                localStorage.getItem("crows_last_active");
-                        } else {
-                            char = roster[remaining[0]];
-                            currentCharName = remaining[0];
-                            localStorage.setItem(
-                                "crows_last_active",
-                                currentCharName,
-                              );
-                        }
-                    } else {
-                        char = getBlankChar("");
-                        currentCharName = "";
-                        localStorage.setItem("crows_last_active", "");
-                    }
-
-                    updateAllUI();
+                    loadData();
                     closeJsonModal();
                 } catch (e) {
-                    alert(
-                        "Invalid JSON format! Review fields, arrays, and braces syntax carefully.",
-                    );
+                    alert("Invalid JSON");
                 }
             }
 
@@ -1522,13 +2409,11 @@
                     char[field] || "";
                 document.getElementById("textModal").classList.add("open");
             }
-
             function closeTextModal() {
                 currentOpenModal = null;
                 currentTextFieldTarget = "";
                 document.getElementById("textModal").classList.remove("open");
             }
-
             function saveTextModal() {
                 if (currentTextFieldTarget) {
                     char[currentTextFieldTarget] =
@@ -1540,53 +2425,42 @@
             }
 
             function updateButtonBorders() {
-                const notesBtn = document.getElementById("btn-notes");
-                const xplogBtn = document.getElementById("btn-xplog");
-
-                if (!char.notes || char.notes.trim() === "") {
-                    notesBtn.className = "btn-toggle-header is-empty";
-                } else {
-                    notesBtn.className = "btn-toggle-header has-content";
-                }
-
-                if (!char.xplog || char.xplog.trim() === "") {
-                    xplogBtn.className = "btn-toggle-header is-empty";
-                } else {
-                    xplogBtn.className = "btn-toggle-header has-content";
-                }
+                const n = document.getElementById("btn-notes"),
+                    x = document.getElementById("btn-xplog");
+                n.className =
+                    !char.notes || char.notes.trim() === ""
+                        ? "btn-toggle-header is-empty"
+                        : "btn-toggle-header has-content";
+                x.className =
+                    !char.xplog || char.xplog.trim() === ""
+                        ? "btn-toggle-header is-empty"
+                        : "btn-toggle-header has-content";
             }
 
             function saveData() {
-                if (!currentCharName) return;
-                roster[currentCharName] = char;
-                localStorage.setItem("crows_roster", JSON.stringify(roster));
-                localStorage.setItem("crows_last_active", currentCharName);
+                if (currentCharName) {
+                    roster[currentCharName] = char;
+                    localStorage.setItem(
+                        "crows_roster",
+                        JSON.stringify(roster),
+                    );
+                    localStorage.setItem("crows_last_active", currentCharName);
+                }
             }
 
             function loadData() {
-                const data = localStorage.getItem("crows_roster");
-                const lastActive = localStorage.getItem("crows_last_active");
-
+                const data = localStorage.getItem("crows_roster"),
+                    last = localStorage.getItem("crows_last_active");
                 if (data) {
                     roster = JSON.parse(data);
-                    if (roster["Unnamed Crow"]) delete roster["Unnamed Crow"];
-
-                    for (let name in roster) {
-                        if (roster[name].status === "Alive") {
-                            roster[name].status = "Active";
-                        }
-                    }
-
-                    if (lastActive && roster[lastActive]) {
-                        char = roster[lastActive];
-                        currentCharName = lastActive;
+                    if (last && roster[last]) {
+                        char = roster[last];
+                        currentCharName = last;
                     } else {
-                        const first = Object.keys(roster).filter(
-                            (n) => n !== "",
-                        )[0];
-                        if (first) {
-                            char = roster[first];
-                            currentCharName = first;
+                        const r = Object.keys(roster).filter((n) => n !== "");
+                        if (r[0]) {
+                            char = roster[r[0]];
+                            currentCharName = r[0];
                         }
                     }
                 }
@@ -1594,47 +2468,47 @@
             }
 
             function updateAllUI() {
-                // Update modern vs roman state properties on the DOM layout
                 document.body.setAttribute("data-roman-mode", useRomanNumerals);
-                document.getElementById("btn-roman-toggle").innerText = useRomanNumerals ? "IVX" : "123";
-
-                if (char.speed === undefined) char.speed = 5;
-                if (!char.backpackWounds)
-                    char.backpackWounds = Array(10).fill(false);
-                if (char.experience === undefined) char.experience = "0/0";
-                if (char.status === undefined || char.status === "Alive")
-                    char.status = "Active";
-                if (char.xplog === undefined) char.xplog = "";
-
+                document.getElementById("btn-roman-toggle").innerText =
+                    useRomanNumerals ? "IVX" : "123";
                 document.getElementById("charName").value = char.name || "";
                 document.getElementById("bgSelect").value =
                     char.background || "";
                 document.getElementById("feature").value = char.feature || "";
-                document.getElementById("experience").value = char.experience;
-                document.getElementById("statusSelect").value = char.status;
+                document.getElementById("experience").value =
+                    char.experience || "0/0";
+                document.getElementById("statusSelect").value =
+                    char.status || "Active";
                 document.getElementById("otherConditions").value =
                     char.otherConditions || "";
-
-                document.getElementById("val-stamina").innerText =
-                    formatNumber(char.stamina || 0);
+                document.getElementById("val-stamina").innerText = formatNumber(
+                    char.stamina || 0,
+                );
                 document.getElementById("val-maxStamina").innerText =
                     formatNumber(char.maxStamina || 5);
-                document.getElementById("val-ad").innerText = formatNumber(char.ad || 0);
-                document.getElementById("val-maxAd").innerText =
-                    formatNumber(char.maxAd || 0);
-                document.getElementById("val-speed").innerText = formatNumber(char.speed);
-                document.getElementById("val-blessed").innerText =
-                    formatNumber(char.blessed || 0);
-                document.getElementById("val-boned").innerText =
-                    formatNumber(char.boned || 0);
-
+                document.getElementById("val-ad").innerText = formatNumber(
+                    char.ad || 0,
+                );
+                document.getElementById("val-maxAd").innerText = formatNumber(
+                    char.maxAd || 0,
+                );
+                document.getElementById("val-speed").innerText = formatNumber(
+                    char.speed || 5,
+                );
+                document.getElementById("val-blessed").innerText = formatNumber(
+                    char.blessed || 0,
+                );
+                document.getElementById("val-boned").innerText = formatNumber(
+                    char.boned || 0,
+                );
                 document.getElementById("attacks").value = char.attacks || "";
                 document.getElementById("traits").value = char.traits || "";
-
-                document.getElementById("val-agility").innerText =
-                    formatNumber(char.stats.agility || 0);
-                document.getElementById("val-mind").innerText =
-                    formatNumber(char.stats.mind || 0);
+                document.getElementById("val-agility").innerText = formatNumber(
+                    char.stats.agility || 0,
+                );
+                document.getElementById("val-mind").innerText = formatNumber(
+                    char.stats.mind || 0,
+                );
                 document.getElementById("val-strength").innerText =
                     formatNumber(char.stats.strength || 0);
 
@@ -1642,14 +2516,13 @@
                     .querySelectorAll('[id^="skill_"]')
                     .forEach((el) => (el.innerText = formatNumber(0)));
                 if (char.skills) {
-                    for (const [skill, val] of Object.entries(char.skills)) {
+                    for (const [s, v] of Object.entries(char.skills)) {
                         let el = document.getElementById(
-                            `skill_${skill.replace(/\s+/g, "")}`,
+                            `skill_${s.replace(/\s+/g, "")}`,
                         );
-                        if (el) el.innerText = formatNumber(val);
+                        if (el) el.innerText = formatNumber(v);
                     }
                 }
-
                 document.getElementById("hand1").value =
                     char.inventory.hand1 || "";
                 document.getElementById("hand2").value =
@@ -1658,22 +2531,282 @@
                     char.inventory.belt1 || "";
                 document.getElementById("belt2").value =
                     char.inventory.belt2 || "";
-
-                document.getElementById("mag_head").value =
-                    char.magic.head || "";
-                document.getElementById("mag_neck").value =
-                    char.magic.neck || "";
-                document.getElementById("mag_waist").value =
-                    char.magic.waist || "";
-                document.getElementById("mag_arms").value =
-                    char.magic.arms || "";
-                document.getElementById("mag_finger").value =
-                    char.magic.finger || "";
-                document.getElementById("mag_feet").value =
-                    char.magic.feet || "";
-
+                const m = char.magic || {};
+                document.getElementById("mag_head").value = m.head || "";
+                document.getElementById("mag_neck").value = m.neck || "";
+                document.getElementById("mag_waist").value = m.waist || "";
+                document.getElementById("mag_arms").value = m.arms || "";
+                document.getElementById("mag_finger").value = m.finger || "";
+                document.getElementById("mag_feet").value = m.feet || "";
                 renderBackpack();
                 updateButtonBorders();
+                checkDropdownHighlight();
+            }
+
+            function openWizard() {
+                document.getElementById("rosterList").classList.remove("open");
+                document.getElementById("wizardModal").classList.add("open");
+                wizStep = 1;
+                wizSelBg = null;
+                wizWarned = false;
+                document.getElementById("wizName").value = "";
+                document.getElementById("wizFeature").value = "";
+                renderWizTable();
+                updateWizUI();
+            }
+            function closeWizard() {
+                document.getElementById("wizardModal").classList.remove("open");
+            }
+
+            function renderWizTable() {
+                const t = document.getElementById("bgTable");
+                t.innerHTML = "";
+                bgData.forEach((b, i) => {
+                    let tr = document.createElement("tr");
+                    tr.id = `bgRow${i}`;
+                    tr.innerHTML = `<td>[${b.d}]</td><td>${b.n}</td>`;
+                    tr.onclick = () => selectBg(i);
+                    t.appendChild(tr);
+                });
+            }
+
+            function selectBg(idx) {
+                document
+                    .querySelectorAll("#bgTable tr")
+                    .forEach((r) => r.classList.remove("selected"));
+                document
+                    .getElementById(`bgRow${idx}`)
+                    .classList.add("selected");
+                wizSelBg = bgData[idx];
+
+                // Regex cleaner logic to remove (1/1), (20/20) flags from previews beautifully
+                const cleanEq = wizSelBg.eq.map((item) =>
+                    item.replace(/\s*\(\d+\/\d+\)/g, ""),
+                );
+
+                document.getElementById("bgDetails").innerHTML =
+                    `<b>Stamina:</b> ${wizSelBg.st} | <b>Stat:</b> ${wizSelBg.s.replace("|", " or ")}<br><b>Trait:</b> ${wizSelBg.t}<br><b>Skills:</b> ${wizSelBg.sk.join(", ")}<br><b>Equipment:</b> ${cleanEq.join(", ")}`;
+                document
+                    .getElementById(`bgRow${idx}`)
+                    .scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+
+            function wizRollBg() {
+                let d1 = Math.floor(Math.random() * 6) + 1,
+                    d2 = Math.floor(Math.random() * 6) + 1;
+                let target = bgData.findIndex((b) => b.d === `${d1},${d2}`);
+                selectBg(target);
+            }
+
+            function wizNav(dir) {
+                if (dir === -1 && wizStep === 1) {
+                    closeWizard();
+                    return;
+                }
+                if (dir === 1 && wizStep === 1 && !wizSelBg) return;
+                if (dir === 1 && wizStep === 3) {
+                    finishWizard();
+                    return;
+                }
+                if (dir === 1 && wizStep === 1) setupStep2();
+                wizStep += dir;
+                updateWizUI();
+            }
+
+            function updateWizUI() {
+                document
+                    .querySelectorAll(".wizard-step")
+                    .forEach((s) => s.classList.remove("active"));
+                document
+                    .getElementById(`wizStep${wizStep}`)
+                    .classList.add("active");
+                document.getElementById("wizStepLabel").innerText =
+                    `Step ${wizStep}/3`;
+                document.getElementById("wizBtnPrev").innerText =
+                    wizStep === 1 ? "Cancel" : "Back";
+                document.getElementById("wizBtnNext").innerText =
+                    wizStep === 3 ? "Finish" : "Next";
+            }
+
+            function setupStep2() {
+                let sS = document.getElementById("wizStatChoice"),
+                    bS = document.getElementById("wizBoostChoice"),
+                    cC = document.getElementById("wizChoiceContainer");
+                sS.innerHTML = "";
+                bS.innerHTML = '<option value="none">None</option>';
+                cC.innerHTML = "";
+                let opts =
+                    wizSelBg.s === "Any"
+                        ? ["Agility", "Mind", "Strength"]
+                        : wizSelBg.s.split("|");
+                opts.forEach((o) => {
+                    let opt = document.createElement("option");
+                    opt.value = o.toLowerCase();
+                    opt.text = o;
+                    sS.appendChild(opt);
+                });
+
+                const choiceClasses = {
+                    Beggar: ["Endurance", "Hide", "Lift", "Search", "Sneak"],
+                    Cook: [
+                        "Alchemy",
+                        "Endurance",
+                        "Lift",
+                        "Nature Lore",
+                        "Slashing",
+                    ],
+                };
+
+                if (choiceClasses[wizSelBg.n]) {
+                    document.getElementById("wizSep1").style.display = "block";
+                    document.getElementById("wizSep2").style.display = "block";
+                    let h = `<label>Skill Choice (+1):</label><select id="wizSkillChoice">`;
+                    choiceClasses[wizSelBg.n].forEach(
+                        (sk) => (h += `<option value="${sk}">${sk}</option>`),
+                    );
+                    h += `</select>`;
+                    cC.innerHTML = h;
+                } else {
+                    document.getElementById("wizSep1").style.display = "none";
+                    document.getElementById("wizSep2").style.display = "none";
+                }
+
+                resetBoost();
+                updateWizStats();
+            }
+
+            function resetBoost() {
+                let primary = document.getElementById("wizStatChoice").value;
+                let bS = document.getElementById("wizBoostChoice");
+                bS.innerHTML = '<option value="none">None</option>';
+                ["agility", "mind", "strength"]
+                    .filter((s) => s !== primary)
+                    .forEach((s) => {
+                        let opt = document.createElement("option");
+                        opt.value = s;
+                        opt.text = s.charAt(0).toUpperCase() + s.slice(1);
+                        bS.appendChild(opt);
+                    });
+            }
+
+            function updateWizStats() {
+                let primary = document.getElementById("wizStatChoice").value,
+                    boost = document.getElementById("wizBoostChoice").value;
+                let stats = ["agility", "mind", "strength"];
+                const idMap = {
+                    agility: "wAgl",
+                    mind: "wMnd",
+                    strength: "wStr",
+                };
+
+                stats.forEach((s) => {
+                    let val = 0;
+                    if (s === primary) val = 1;
+                    else if (boost !== "none") val = s === boost ? 1 : -1;
+                    let el = document.getElementById(idMap[s]);
+                    if (el) el.innerText = val >= 0 ? "+" + val : val;
+                });
+            }
+
+            function finishWizard() {
+                let n = document.getElementById("wizName").value.trim(),
+                    f = document.getElementById("wizFeature").value.trim();
+                if ((!n || !f) && !wizWarned) {
+                    alert(
+                        "Complete details are recommended. Click Finish again to confirm.",
+                    );
+                    wizWarned = true;
+                    return;
+                }
+                if (n && roster[n] && !confirm("Overwrite existing character?"))
+                    return;
+
+                let primary = document.getElementById("wizStatChoice").value,
+                    boost = document.getElementById("wizBoostChoice").value;
+
+                char = getBlankChar(n || "Unnamed Crow");
+                char.feature = f;
+                char.background = wizSelBg.n;
+                char.stamina = wizSelBg.st;
+                char.maxStamina = wizSelBg.st;
+                char.traits = wizSelBg.t;
+
+                ["agility", "mind", "strength"].forEach((s) => {
+                    let val = 0;
+                    if (s === primary) val = 1;
+                    else if (boost !== "none") val = s === boost ? 1 : -1;
+                    char.stats[s] = val;
+                });
+
+                wizSelBg.sk.forEach((s) => (char.skills[s] = 1));
+                let sc = document.getElementById("wizSkillChoice");
+                if (sc) {
+                    let sk = sc.value;
+                    char.skills[sk] = (char.skills[sk] || 0) + 1;
+                }
+
+                // Standardized Universal Items setup
+                char.inventory.hand2 = "Knife";
+                char.backpack[0] = "Bedroll";
+                char.backpack[1] = "Coin Purse (0/500 gc)";
+                char.backpack[2] = "Rope";
+                char.backpack[3] = "Rations (6/6)";
+
+                // Filter background specific items cleanly
+                let eq = [
+                    ...(wizSelBg.n.includes("Merchant") ||
+                    wizSelBg.n.includes("Noble")
+                        ? wizSelBg.eq.filter((item) => item !== "50 gc")
+                        : wizSelBg.eq),
+                ];
+
+                // Primary background weapon / operational gear hand assignment
+                if (
+                    eq[0] &&
+                    (eq[0].toLowerCase().includes("sword") ||
+                        eq[0].toLowerCase().includes("mace") ||
+                        eq[0].toLowerCase().includes("axe") ||
+                        eq[0].toLowerCase().includes("shortbow") ||
+                        eq[0].toLowerCase().includes("pike") ||
+                        eq[0].toLowerCase().includes("spear") ||
+                        eq[0].toLowerCase().includes("handaxe") ||
+                        eq[0].toLowerCase().includes("greataxe") ||
+                        eq[0].toLowerCase().includes("maul") ||
+                        eq[0].toLowerCase().includes("holy symbol") ||
+                        eq[0].toLowerCase().includes("compass") ||
+                        eq[0].toLowerCase().includes("alchemist's tools") ||
+                        eq[0].toLowerCase().includes("spellbook"))
+                ) {
+                    char.inventory.hand1 = eq.shift();
+                }
+
+                // Purse cash calculations
+                if (
+                    wizSelBg.n.includes("Merchant") ||
+                    wizSelBg.n.includes("Noble")
+                ) {
+                    char.backpack[1] = "Coin Purse (50/500 gc)";
+                }
+
+                // Overflow inventory sorting array
+                let bpIndex = 4;
+                let beltSlots = ["belt1", "belt2"];
+                let beltIndex = 0;
+
+                eq.forEach((item) => {
+                    if (bpIndex < 10) {
+                        char.backpack[bpIndex++] = item;
+                    } else if (beltIndex < 2) {
+                        char.inventory[beltSlots[beltIndex++]] = item;
+                    }
+                });
+
+                currentCharName = char.name;
+                roster[char.name] = char;
+                saveData();
+                closeWizard();
+                updateAllUI();
+                renderDropdownList();
             }
 
             init();
